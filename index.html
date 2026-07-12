@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Clean by DC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#F4F1E9; --bg-2:#FBFAF6; --card:#FFFFFF; --ink:#3A332C; --ink-soft:#726A5F; --ink-faint:#A79E90;
+  --gold:#A5792A; --gold-light:#C9A227; --gold-bg:#F4E9D2; --sage:#7C8B70; --sage-bg:#E7ECDF;
+  --border:#E3DDCE; --danger:#AE4A34; --danger-bg:#F3E1DA; --success:#5C7A4C; --success-bg:#E4EBDD;
+  --info:#4A6A8A; --info-bg:#DEE7EE; --radius:10px; --shadow:0 1px 2px rgba(58,51,44,.06),0 6px 20px rgba(58,51,44,.06);
+  --sidebar-w:232px;
+}
+*{box-sizing:border-box;} html,body{height:100%;}
+body{margin:0;font-family:'Jost','Helvetica Neue',Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14.5px;line-height:1.5;}
+h1,h2,h3,h4{font-family:'Playfair Display',Georgia,serif;font-weight:600;margin:0 0 4px 0;letter-spacing:.2px;}
+a{color:inherit;text-decoration:none;} button{font-family:inherit;font-size:inherit;cursor:pointer;}
+input,select,textarea{font-family:inherit;font-size:inherit;}
+.small-caps{text-transform:uppercase;letter-spacing:1.6px;font-size:11px;color:var(--gold);font-weight:500;}
+.muted{color:var(--ink-soft);}
+#auth-screen{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.auth-card{background:var(--bg-2);border-radius:14px;max-width:400px;width:100%;padding:34px 32px;box-shadow:0 30px 80px rgba(0,0,0,.4);text-align:center;}
+.auth-mark{width:60px;height:60px;margin:0 auto 14px;}
+.auth-card h2{font-size:21px;margin-bottom:4px;} .auth-card .sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:22px;}
+.auth-card .form-row{text-align:left;}
+.auth-msg{border-radius:7px;padding:9px 12px;font-size:12.5px;margin-bottom:14px;display:none;}
+.auth-msg.show{display:block;} .auth-msg.error{background:var(--danger-bg);color:var(--danger);}
+.auth-msg.ok{background:var(--success-bg);color:var(--success);}
+.auth-toggle{font-size:12.5px;color:var(--gold);background:none;border:none;margin-top:14px;}
+.auth-toggle:hover{text-decoration:underline;}
+.auth-lang{position:absolute;top:20px;right:24px;display:flex;gap:6px;}
+.lang-btn{padding:5px 10px;border-radius:6px;border:1px solid rgba(239,233,221,.3);background:transparent;color:#D8D0BF;font-size:11.5px;letter-spacing:.5px;}
+.lang-btn.active{background:var(--gold);color:#241F19;border-color:var(--gold);}
+#app-shell,#client-portal{display:none;}
+#app-shell.visible{display:flex;min-height:100vh;}
+#client-portal.visible{display:block;min-height:100vh;}
+.sidebar{width:var(--sidebar-w);background:var(--ink);color:#EFE9DD;flex-shrink:0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;padding:26px 18px 18px;}
+.brand{display:flex;align-items:center;gap:12px;padding-bottom:16px;margin-bottom:10px;border-bottom:1px solid rgba(239,233,221,.14);}
+.brand-mark{width:46px;height:46px;flex-shrink:0;}
+.brand-text .name{font-family:'Playfair Display',serif;font-size:16px;letter-spacing:.5px;color:#F4E9D2;line-height:1.2;}
+.brand-text .sub{font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:#B7AE9C;margin-top:2px;}
+.sidebar-lang{display:flex;gap:6px;margin-bottom:16px;}
+.nav{list-style:none;margin:0;padding:0;flex:1;} .nav li{margin-bottom:2px;}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;color:#D8D0BF;font-size:13.5px;letter-spacing:.2px;transition:background .15s,color .15s;}
+.nav a svg{width:17px;height:17px;flex-shrink:0;opacity:.85;}
+.nav a:hover{background:rgba(239,233,221,.08);color:#fff;}
+.nav a.active{background:var(--gold);color:#241F19;font-weight:500;} .nav a.active svg{opacity:1;}
+.sidebar-footer{border-top:1px solid rgba(239,233,221,.14);padding-top:14px;font-size:11px;color:#8F887A;line-height:1.6;}
+.sidebar-footer b{color:#C9A227;}
+.signout-btn{display:flex;align-items:center;gap:8px;width:100%;padding:8px 10px;margin-top:10px;border-radius:7px;border:1px solid rgba(239,233,221,.18);background:transparent;color:#D8D0BF;font-size:12px;}
+.signout-btn:hover{background:rgba(239,233,221,.08);color:#fff;} .signout-btn svg{width:14px;height:14px;}
+.main{margin-left:var(--sidebar-w);flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{background:var(--bg-2);border-bottom:1px solid var(--border);padding:16px 30px;display:flex;align-items:center;justify-content:space-between;gap:20px;position:sticky;top:0;z-index:20;}
+.topbar h1{font-size:22px;} .topbar .page-sub{font-size:12.5px;color:var(--ink-soft);margin-top:1px;}
+.view{padding:26px 30px 60px;flex:1;}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:8px;border:1px solid transparent;font-size:13.5px;font-weight:500;letter-spacing:.2px;background:var(--ink);color:#fff;transition:opacity .15s,transform .1s;}
+.btn svg{width:14px;height:14px;} .btn:hover{opacity:.88;} .btn:active{transform:scale(.98);}
+.btn-gold{background:var(--gold);color:#28221B;} .btn-outline{background:transparent;border:1px solid var(--border);color:var(--ink);}
+.btn-outline:hover{background:#fff;} .btn-sage{background:var(--sage);color:#fff;} .btn-danger{background:var(--danger);color:#fff;}
+.btn-sm{padding:6px 11px;font-size:12.5px;border-radius:7px;} .btn-icon{padding:8px;border-radius:7px;background:transparent;border:1px solid var(--border);color:var(--ink-soft);}
+.btn-icon:hover{background:#fff;color:var(--ink);} .btn[disabled]{opacity:.45;cursor:not-allowed;} .btn-block{width:100%;justify-content:center;}
+.link-btn{background:none;border:none;color:var(--gold);font-weight:500;padding:0;} .link-btn:hover{text-decoration:underline;}
+.grid{display:grid;gap:18px;} .grid-4{grid-template-columns:repeat(4,1fr);} .grid-3{grid-template-columns:repeat(3,1fr);} .grid-2{grid-template-columns:2fr 1fr;}
+@media (max-width:1100px){.grid-4{grid-template-columns:repeat(2,1fr);} .grid-2{grid-template-columns:1fr;}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;} .card-head h3{font-size:16px;}
+.kpi{padding:18px 20px;} .kpi .small-caps{margin-bottom:8px;display:block;} .kpi .value{font-family:'Playfair Display',serif;font-size:28px;font-weight:600;}
+.kpi .delta{font-size:12px;margin-top:6px;color:var(--ink-soft);} .kpi .delta.up{color:var(--success);} .kpi .delta.down{color:var(--danger);}
+.table-wrap{overflow-x:auto;} table{width:100%;border-collapse:collapse;font-size:13.5px;}
+th{text-align:left;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);font-weight:500;padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:12px;border-bottom:1px solid var(--border);vertical-align:middle;} tbody tr{transition:background .12s;cursor:pointer;}
+tbody tr:hover{background:var(--bg);} tbody tr:last-child td{border-bottom:none;}
+.row-name{font-weight:500;} .row-name .sub{display:block;font-size:11.5px;color:var(--ink-soft);font-weight:400;}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:100px;font-size:11px;font-weight:500;letter-spacing:.3px;white-space:nowrap;}
+.badge-dot{width:6px;height:6px;border-radius:50%;background:currentColor;} .badge-gray{background:#EEEAE0;color:var(--ink-soft);}
+.badge-gold{background:var(--gold-bg);color:#8A5F17;} .badge-sage{background:var(--sage-bg);color:var(--sage);}
+.badge-info{background:var(--info-bg);color:var(--info);} .badge-success{background:var(--success-bg);color:var(--success);} .badge-danger{background:var(--danger-bg);color:var(--danger);}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;flex-wrap:wrap;} .filters{display:flex;gap:8px;flex-wrap:wrap;}
+.chip{padding:7px 14px;border-radius:100px;border:1px solid var(--border);background:#fff;font-size:12.5px;color:var(--ink-soft);}
+.chip.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+.empty{text-align:center;padding:50px 20px;color:var(--ink-soft);} .empty svg{width:40px;height:40px;color:var(--ink-faint);margin-bottom:10px;} .empty h4{color:var(--ink);margin-bottom:4px;}
+.modal-overlay{position:fixed;inset:0;background:rgba(58,51,44,.45);display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;z-index:100;}
+.modal{background:#fff;border-radius:12px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:pop .15s ease-out;}
+@keyframes pop{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border);} .modal-head h3{font-size:18px;}
+.modal-body{padding:22px 24px;max-height:70vh;overflow-y:auto;} .modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px;}
+.modal-close{background:none;border:none;font-size:20px;color:var(--ink-soft);line-height:1;padding:4px;}
+.form-row{margin-bottom:14px;} .form-row label{display:block;font-size:12px;font-weight:500;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.2px;}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:7px;background:var(--bg-2);color:var(--ink);outline:none;}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{border-color:var(--gold);background:#fff;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;} .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;} textarea{resize:vertical;min-height:70px;}
+.line-items{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:10px;}
+.line-item-row{display:grid;grid-template-columns:1fr 70px 100px 32px;gap:8px;padding:10px;border-bottom:1px solid var(--border);align-items:center;}
+.line-item-row:last-child{border-bottom:none;} .line-item-row input{padding:7px 9px;} .li-remove{background:none;border:none;color:var(--danger);font-size:16px;}
+.totals-box{margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);} .totals-row{display:flex;justify-content:space-between;padding:4px 0;font-size:13.5px;}
+.totals-row.grand{font-weight:600;font-size:16px;font-family:'Playfair Display',serif;padding-top:8px;border-top:1px solid var(--border);margin-top:6px;}
+.kanban{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:start;} @media (max-width:1200px){.kanban{grid-template-columns:repeat(2,1fr);}}
+.kanban-col{background:#F0ECE2;border-radius:10px;padding:12px;min-height:120px;} .kanban-col-head{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 12px;}
+.kanban-count{background:#fff;border-radius:100px;padding:2px 8px;font-size:11px;color:var(--ink-soft);}
+.job-card{background:#fff;border-radius:9px;padding:13px 14px;margin-bottom:10px;border:1px solid var(--border);box-shadow:var(--shadow);cursor:pointer;}
+.job-card:hover{border-color:var(--gold-light);} .job-card .jc-title{font-weight:500;font-size:13.5px;margin-bottom:4px;}
+.job-card .jc-meta{font-size:11.5px;color:var(--ink-soft);display:flex;align-items:center;gap:6px;margin-top:5px;} .job-card .jc-meta svg{width:12px;height:12px;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;} .cal-day-name{text-align:center;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--ink-soft);padding-bottom:6px;}
+.cal-cell{background:#fff;border:1px solid var(--border);border-radius:8px;min-height:104px;padding:8px;font-size:12px;}
+.cal-cell.other-month{background:#F0ECE2;opacity:.55;} .cal-cell.today{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold) inset;}
+.cal-date{font-weight:500;margin-bottom:6px;font-family:'Playfair Display',serif;}
+.cal-job{background:var(--gold-bg);color:#8A5F17;border-radius:5px;padding:3px 6px;margin-bottom:3px;font-size:10.8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+.cal-job.status-completed{background:var(--sage-bg);color:var(--sage);} .cal-job.status-inprogress{background:var(--info-bg);color:var(--info);}
+.detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;}
+.avatar-circle{width:52px;height:52px;border-radius:50%;background:var(--gold-bg);color:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:19px;flex-shrink:0;}
+.tag-list{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;} .info-line{display:flex;align-items:center;gap:8px;font-size:13.5px;padding:6px 0;color:var(--ink-soft);}
+.info-line svg{width:15px;height:15px;flex-shrink:0;color:var(--ink-faint);} .info-line b{color:var(--ink);font-weight:500;}
+#toast-wrap{position:fixed;bottom:24px;right:24px;z-index:200;display:flex;flex-direction:column;gap:10px;}
+.toast{background:var(--ink);color:#F4E9D2;padding:13px 18px;border-radius:8px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;animation:slideIn .2s ease-out;min-width:240px;}
+.toast svg{width:16px;height:16px;color:var(--gold-light);flex-shrink:0;} @keyframes slideIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:translateX(0);}}
+.helper-note{background:var(--sage-bg);border:1px solid #D3DCC7;color:#4E6242;border-radius:8px;padding:11px 14px;font-size:12.5px;margin-bottom:18px;display:flex;gap:10px;align-items:flex-start;}
+.helper-note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;}
+.service-swatch{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:#fff;}
+.service-swatch .cat{font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-faint);}
+.progress-track{height:6px;background:var(--border);border-radius:100px;overflow:hidden;margin-top:6px;} .progress-fill{height:100%;background:var(--sage);border-radius:100px;}
+.loading-spinner{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--ink-soft);font-size:13px;}
+::-webkit-scrollbar{width:9px;height:9px;} ::-webkit-scrollbar-thumb{background:#D9D2C2;border-radius:10px;} ::-webkit-scrollbar-track{background:transparent;}
+@media print{.sidebar,.topbar,.no-print{display:none !important;} .main{margin-left:0;}}
+/* client portal specific */
+.cp-topbar{background:var(--ink);color:#F4E9D2;padding:18px 30px;display:flex;align-items:center;justify-content:space-between;}
+.cp-body{max-width:900px;margin:0 auto;padding:30px 20px 60px;}
+</style>
+</head>
+<body>
+
+<div id="auth-screen"></div>
+<div id="app-shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="47" stroke="#C9A227" stroke-width="2.5"/><circle cx="50" cy="50" r="41" stroke="#C9A227" stroke-width="0.75"/><text x="50" y="61" text-anchor="middle" font-family="Playfair Display, serif" font-size="34" fill="#F4E9D2">DC</text></svg>
+      <div class="brand-text"><div class="name">Dream Clean</div><div class="sub">by DC · Orlando</div></div>
+    </div>
+    <div class="sidebar-lang" id="sidebar-lang"></div>
+    <ul class="nav" id="nav-list"></ul>
+    <div class="sidebar-footer">
+      <div><b>Dream Clean by DC</b></div>
+      <div id="sidebar-footer-label"></div>
+      <button class="signout-btn" onclick="doSignOut()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span id="signout-label"></span></button>
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div><h1 id="page-title">Dashboard</h1><div class="page-sub" id="page-sub"></div></div>
+      <button class="btn btn-gold" onclick="openQuickAddMenu(event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg><span id="new-btn-label"></span></button>
+    </div>
+    <div class="view" id="view"></div>
+  </div>
+</div>
+<div id="client-portal"></div>
+<div id="modal-root"></div>
+<div id="toast-wrap"></div>
+
+<script>
+/* =========================================================================
+   DREAM CLEAN BY DC — FASE 2: app conectada a Supabase (login real + roles)
+   ========================================================================= */
+const SUPABASE_URL = 'https://gdnmgcqmdllviqjvyqot.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_gfOVX2vGt_OozmHrQxDW0A_nlqvrdOn';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const ICONS = {
+  dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>',
+  clients:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6"/><circle cx="17.5" cy="9" r="2.6"/><path d="M15.7 14.3c2.7.3 4.8 2.5 4.8 5.7"/></svg>',
+  quotes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4"/><line x1="8.5" y1="12" x2="15" y2="12"/><line x1="8.5" y1="15.5" x2="15" y2="15.5"/></svg>',
+  jobs:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7.5" width="18" height="12" rx="1.5"/><path d="M8.5 7.5V6a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v1.5"/><line x1="3" y1="12.5" x2="21" y2="12.5"/></svg>',
+  calendar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/></svg>',
+  invoices:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2Z"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12" x2="15" y2="12"/></svg>',
+  reports:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V9M11 19V4M18 19v-7"/></svg>',
+  settings:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34H9a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1Z"/></svg>',
+  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .6 2.9a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.5 2.9.6a2 2 0 0 1 1.8 2Z"/></svg>',
+  mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+  edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="20 6 9 17 4 12"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.3"/><path d="M4.5 20c0-4 3.5-7 7.5-7s7.5 3 7.5 7"/></svg>',
+  info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.8" r="0.6" fill="currentColor"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+};
+
+let LANG = localStorage.getItem('dreamclean_lang') || 'en';
+const T = {
+  nav_dashboard:{en:'Dashboard',es:'Panel'}, nav_clients:{en:'Clients',es:'Clientes'}, nav_quotes:{en:'Quotes',es:'Cotizaciones'},
+  nav_jobs:{en:'Jobs',es:'Trabajos'}, nav_calendar:{en:'Calendar',es:'Calendario'}, nav_invoices:{en:'Invoicing',es:'Facturación'},
+  nav_reports:{en:'Reports',es:'Reportes'}, nav_settings:{en:'Settings',es:'Configuración'},
+  dashboard_sub:{en:'Your cleaning business at a glance, today',es:'Resumen de tu negocio, hoy'},
+  clients_sub:{en:'Client directory and properties',es:'Directorio de clientes y propiedades'},
+  quotes_sub:{en:'Create, send, and follow up on your quotes',es:'Crea, envía y da seguimiento a tus cotizaciones'},
+  jobs_sub:{en:'Board of scheduled jobs',es:'Tablero de trabajos programados'},
+  calendar_sub:{en:'Monthly view of your team',es:'Vista mensual de tu equipo'},
+  invoices_sub:{en:'Invoices, payments, and accounts receivable',es:'Facturas, pagos y cuentas por cobrar'},
+  reports_sub:{en:'Business performance',es:'Desempeño del negocio'},
+  settings_sub:{en:'Business, team, and service rates',es:'Negocio, equipo y tarifas de servicio'},
+  sidebar_footer:{en:'Team dashboard',es:'Panel del equipo'},
+  sign_out:{en:'Sign out',es:'Cerrar sesión'}, btn_new:{en:'New',es:'Nuevo'},
+  helper_note:{en:'Connected to your live Supabase database. Changes here are real.',es:'Conectado a tu base de datos real en Supabase. Los cambios aquí son reales.'},
+  kpi_active_clients:{en:'Active clients',es:'Clientes activos'}, kpi_upcoming_jobs:{en:'Upcoming jobs',es:'Trabajos próximos'},
+  kpi_outstanding:{en:'Outstanding',es:'Por cobrar'}, kpi_collected:{en:'Collected (lifetime)',es:'Cobrado (histórico)'},
+  scheduled_today:{en:'scheduled today',es:'programados hoy'}, overdue_invoices_suffix:{en:'overdue invoice(s)',es:'factura(s) vencida(s)'},
+  paid_invoices_suffix:{en:'invoice(s) paid',es:'factura(s) pagada(s)'}, todays_schedule:{en:"Today's schedule",es:'Agenda de hoy'},
+  view_calendar:{en:'View calendar',es:'Ver calendario'}, th_time:{en:'Time',es:'Hora'}, th_client:{en:'Client',es:'Cliente'},
+  th_service:{en:'Service',es:'Servicio'}, th_team:{en:'Team',es:'Equipo'}, th_status:{en:'Status',es:'Estado'},
+  unassigned:{en:'Unassigned',es:'Sin asignar'}, no_jobs_today:{en:'No jobs today',es:'Sin trabajos hoy'},
+  pending_quotes:{en:'Pending quotes',es:'Cotizaciones pendientes'}, no_pending_quotes:{en:'No pending quotes',es:'No hay cotizaciones pendientes'},
+  new_quote:{en:'New quote',es:'Nueva cotización'}, invoices_due:{en:'Invoices due',es:'Facturas por cobrar'},
+  view_all:{en:'View all',es:'Ver todas'}, th_invoice_num:{en:'Invoice #',es:'# Factura'}, th_due:{en:'Due',es:'Vence'},
+  th_balance:{en:'Balance',es:'Saldo'}, all_collected:{en:'All collected. Nice work!',es:'Todo cobrado. ¡Buen trabajo!'},
+  team:{en:'Team',es:'Equipo'}, manage:{en:'Manage',es:'Gestionar'}, today:{en:'today',es:'hoy'},
+  filter_all:{en:'All',es:'Todos'}, filter_residential:{en:'Residential',es:'Residencial'}, filter_commercial:{en:'Commercial',es:'Comercial'},
+  new_client:{en:'New client',es:'Nuevo cliente'}, th_type:{en:'Type',es:'Tipo'}, th_properties:{en:'Properties',es:'Propiedades'},
+  th_contact:{en:'Contact',es:'Contacto'}, th_since:{en:'Client since',es:'Cliente desde'}, no_clients:{en:'No clients yet',es:'Sin clientes todavía'},
+  back:{en:'Back',es:'Volver'}, edit:{en:'Edit',es:'Editar'}, client_lifetime_value:{en:'Client lifetime value',es:'Valor histórico del cliente'},
+  jobs_suffix:{en:'job(s)',es:'trabajo(s)'}, invoices_suffix:{en:'invoice(s)',es:'factura(s)'}, section_quotes:{en:'Quotes',es:'Cotizaciones'},
+  section_jobs:{en:'Jobs',es:'Trabajos'}, section_invoices:{en:'Invoices',es:'Facturas'}, no_quotes:{en:'No quotes.',es:'Sin cotizaciones.'},
+  no_jobs:{en:'No jobs.',es:'Sin trabajos.'}, no_invoices:{en:'No invoices.',es:'Sin facturas.'}, edit_client:{en:'Edit client',es:'Editar cliente'},
+  new_client_title:{en:'New client',es:'Nuevo cliente'}, lbl_full_name:{en:'Full name / Company',es:'Nombre completo / Empresa'},
+  lbl_client_type:{en:'Client type',es:'Tipo de cliente'}, lbl_email:{en:'Email',es:'Correo electrónico'}, lbl_phone:{en:'Phone',es:'Teléfono'},
+  lbl_properties:{en:'Properties',es:'Propiedades'}, ph_prop_label:{en:'Label',es:'Etiqueta'}, ph_prop_address:{en:'Full address',es:'Dirección completa'},
+  add_property:{en:'Add property',es:'Agregar propiedad'}, lbl_notes:{en:'Internal notes',es:'Notas internas'}, delete:{en:'Delete',es:'Eliminar'},
+  cancel:{en:'Cancel',es:'Cancelar'}, save_client:{en:'Save client',es:'Guardar cliente'}, confirm_delete_client:{en:'Delete this client?',es:'¿Eliminar este cliente?'},
+  new_quote_btn:{en:'New quote',es:'Nueva cotización'}, th_total:{en:'Total',es:'Total'}, th_date:{en:'Date',es:'Fecha'},
+  convert_to_job:{en:'Convert to job',es:'Convertir a trabajo'}, no_quotes_title:{en:'No quotes',es:'Sin cotizaciones'},
+  edit_quote:{en:'Edit quote',es:'Editar cotización'}, new_quote_modal:{en:'New quote',es:'Nueva cotización'}, lbl_service_type:{en:'Service type',es:'Tipo de servicio'},
+  lbl_status:{en:'Status',es:'Estado'}, lbl_line_items:{en:'Line items',es:'Conceptos'}, add_line_item:{en:'Add line item',es:'Agregar concepto'},
+  ph_quote_notes:{en:'Additional details for the client…',es:'Detalles adicionales para el cliente…'}, save_quote:{en:'Save quote',es:'Guardar cotización'},
+  confirm_delete_quote:{en:'Delete this quote?',es:'¿Eliminar esta cotización?'}, ph_desc:{en:'Description',es:'Descripción'}, ph_qty:{en:'Qty',es:'Cant.'},
+  ph_price:{en:'Price',es:'Precio'}, totals_subtotal:{en:'Subtotal',es:'Subtotal'}, totals_tax:{en:'Tax',es:'Impuesto'}, totals_total:{en:'Total',es:'Total'},
+  kanban_hint:{en:'Move jobs between stages — or open one to update it.',es:'Mueve los trabajos entre etapas — o abre uno para actualizarlo.'},
+  new_job:{en:'New job',es:'Nuevo trabajo'}, edit_job:{en:'Edit job',es:'Editar trabajo'}, new_job_modal:{en:'New job',es:'Nuevo trabajo'},
+  lbl_date:{en:'Date',es:'Fecha'}, lbl_time:{en:'Time',es:'Hora'}, lbl_duration:{en:'Duration (hrs)',es:'Duración (hrs)'},
+  lbl_assigned:{en:'Assigned to',es:'Asignar a'}, lbl_recurrence:{en:'Recurrence',es:'Recurrencia'}, lbl_team_notes:{en:'Notes for the team',es:'Notas para el equipo'},
+  mark_completed:{en:'Mark completed',es:'Marcar completado'}, save_job:{en:'Save job',es:'Guardar trabajo'}, confirm_delete_job:{en:'Delete this job?',es:'¿Eliminar este trabajo?'},
+  today_btn:{en:'Today',es:'Hoy'}, more_suffix:{en:'more',es:'más'}, kpi_total_outstanding:{en:'Total outstanding',es:'Total por cobrar'},
+  kpi_overdue_invoices:{en:'Overdue invoices',es:'Facturas vencidas'}, kpi_paid_invoices:{en:'Paid invoices',es:'Facturas pagadas'},
+  new_invoice:{en:'New invoice',es:'Nueva factura'}, th_issued:{en:'Issued',es:'Emitida'}, no_invoices_title:{en:'No invoices',es:'Sin facturas'},
+  print_pdf:{en:'Print / PDF',es:'Imprimir / PDF'}, record_payment:{en:'Record payment',es:'Registrar pago'}, mark_sent:{en:'Mark as sent',es:'Marcar como enviada'},
+  send_reminder:{en:'Send reminder',es:'Enviar recordatorio'}, bill_to:{en:'Bill to',es:'Facturar a'}, th_desc:{en:'Description',es:'Descripción'},
+  th_amount:{en:'Amount',es:'Importe'}, totals_paid:{en:'Paid',es:'Pagado'}, totals_balance:{en:'Balance due',es:'Saldo pendiente'},
+  payment_method_lbl:{en:'Payment method',es:'Método de pago'}, edit_invoice:{en:'Edit invoice',es:'Editar factura'}, new_invoice_modal:{en:'New invoice',es:'Nueva factura'},
+  lbl_issue_date:{en:'Issue date',es:'Fecha de emisión'}, lbl_due_date:{en:'Due date',es:'Fecha de vencimiento'}, save_invoice:{en:'Save invoice',es:'Guardar factura'},
+  confirm_delete_invoice:{en:'Delete this invoice?',es:'¿Eliminar esta factura?'}, record_payment_title:{en:'Record payment',es:'Registrar pago'},
+  lbl_balance_due:{en:'Balance due',es:'Saldo pendiente'}, lbl_amount:{en:'Amount to record',es:'Monto a registrar'}, kpi_total_billed:{en:'Total billed',es:'Total facturado'},
+  kpi_total_collected:{en:'Total collected',es:'Total cobrado'}, kpi_total_jobs:{en:'Total jobs',es:'Trabajos totales'}, jobs_by_service:{en:'Jobs by service type',es:'Trabajos por tipo de servicio'},
+  jobs_by_status:{en:'Jobs by status',es:'Trabajos por estado'}, business_info:{en:'Business information',es:'Información del negocio'},
+  lbl_business_name:{en:'Business name',es:'Nombre del negocio'}, lbl_tagline:{en:'Tagline',es:'Eslogan'}, lbl_website:{en:'Website',es:'Sitio web'},
+  lbl_tax_rate:{en:'Tax rate (%)',es:'Tasa de impuesto (%)'}, lbl_address:{en:'Address / service area',es:'Dirección / zona de servicio'},
+  save_changes:{en:'Save changes',es:'Guardar cambios'}, settings_team:{en:'Team',es:'Equipo'}, add_member:{en:'Add member',es:'Agregar miembro'},
+  edit_member:{en:'Edit team member',es:'Editar miembro del equipo'}, new_member:{en:'New team member',es:'Nuevo miembro del equipo'},
+  lbl_name:{en:'Name',es:'Nombre'}, lbl_role:{en:'Role',es:'Rol'}, ph_role:{en:'e.g. Cleaning Technician',es:'Ej. Cleaning Technician'}, save:{en:'Save',es:'Guardar'},
+  confirm_remove_member:{en:'Remove this team member?',es:'¿Eliminar este miembro del equipo?'}, service_catalog:{en:'Service catalog & base rates',es:'Catálogo de servicios y tarifas base'},
+  create_new:{en:'Create new',es:'Crear nuevo'}, qa_client:{en:'New client',es:'Nuevo cliente'}, qa_quote:{en:'New quote',es:'Nueva cotización'},
+  qa_job:{en:'New job',es:'Nuevo trabajo'}, qa_invoice:{en:'New invoice',es:'Nueva factura'}, residential:{en:'Residential',es:'Residencial'}, commercial:{en:'Commercial',es:'Comercial'},
+  unit_flat:{en:'flat',es:'tarifa fija'}, unit_visit:{en:'visit',es:'visita'}, unit_turnover:{en:'turnover',es:'turno'},
+  rec_none:{en:'None',es:'Ninguna'}, rec_weekly:{en:'Weekly',es:'Semanal'}, rec_biweekly:{en:'Biweekly',es:'Quincenal'}, rec_monthly:{en:'Monthly',es:'Mensual'}, rec_turnover:{en:'Per turnover',es:'Por turno'},
+  pm_cash:{en:'Cash',es:'Efectivo'}, pm_check:{en:'Check',es:'Cheque'}, pm_card:{en:'Card',es:'Tarjeta'}, pm_bank:{en:'Bank transfer',es:'Transferencia'}, pm_zelle:{en:'Zelle',es:'Zelle'},
+  st_draft:{en:'Draft',es:'Borrador'}, st_sent:{en:'Sent',es:'Enviada'}, st_approved:{en:'Approved',es:'Aprobada'}, st_declined:{en:'Declined',es:'Rechazada'}, st_converted:{en:'Converted',es:'Convertida'},
+  st_requested:{en:'Requested',es:'Solicitado'}, st_scheduled:{en:'Scheduled',es:'Programado'}, st_inprogress:{en:'In Progress',es:'En Progreso'}, st_completed:{en:'Completed',es:'Completado'},
+  st_paid:{en:'Paid',es:'Pagada'}, st_partial:{en:'Partial',es:'Parcial'}, st_overdue:{en:'Overdue',es:'Vencida'},
+  auth_signin_title:{en:'Sign in',es:'Iniciar sesión'}, auth_signup_title:{en:'Create account',es:'Crear cuenta'},
+  auth_sub:{en:'Dream Clean by DC — team & client access',es:'Dream Clean by DC — acceso de equipo y clientes'},
+  lbl_password:{en:'Password',es:'Contraseña'}, signin_btn:{en:'Sign in',es:'Iniciar sesión'}, signup_btn:{en:'Create account',es:'Crear cuenta'},
+  no_account:{en:"Don't have an account? Create one",es:'¿No tienes cuenta? Crea una'}, have_account:{en:'Already have an account? Sign in',es:'¿Ya tienes cuenta? Inicia sesión'},
+  check_email:{en:'Check your email to confirm your account, then sign in.',es:'Revisa tu correo para confirmar tu cuenta, luego inicia sesión.'},
+  loading:{en:'Loading your dashboard…',es:'Cargando tu panel…'},
+  cp_greeting:{en:'Welcome',es:'Bienvenido/a'}, cp_properties:{en:'Your properties',es:'Tus propiedades'},
+  cp_upcoming:{en:'Upcoming appointments',es:'Próximas citas'}, cp_no_upcoming:{en:'No upcoming appointments.',es:'Sin citas próximas.'},
+  cp_quotes:{en:'Quotes awaiting your response',es:'Cotizaciones pendientes de tu respuesta'}, cp_no_quotes:{en:'No quotes waiting for a response.',es:'No hay cotizaciones pendientes.'},
+  cp_approve:{en:'Approve',es:'Aprobar'}, cp_decline:{en:'Decline',es:'Rechazar'}, cp_invoices:{en:'Your invoices',es:'Tus facturas'},
+  cp_no_invoices:{en:'No invoices yet.',es:'Sin facturas todavía.'}, cp_pay_now:{en:'Pay now',es:'Pagar ahora'},
+  cp_pay_soon:{en:'Online payment is being set up — contact us to pay this invoice for now.',es:'El pago en línea se está configurando — contáctanos para pagar esta factura por ahora.'},
+  cp_redirecting:{en:'Redirecting to secure payment…',es:'Redirigiendo a pago seguro…'}, cp_payment_success:{en:'Payment received. Thank you!',es:'Pago recibido. ¡Gracias!'},
+  cp_payment_canceled:{en:'Payment was canceled.',es:'El pago fue cancelado.'}, cp_pay_error:{en:'Could not start payment. Please try again or contact us.',es:'No se pudo iniciar el pago. Intenta de nuevo o contáctanos.'},
+  cp_quote_updated:{en:'Thank you! Your response was recorded.',es:'¡Gracias! Tu respuesta fue registrada.'},
+  cp_not_linked:{en:"Your account was created, but it isn't linked to a client record yet. Please contact Dream Clean by DC to activate your portal access.",es:'Tu cuenta fue creada, pero todavía no está vinculada a un registro de cliente. Contacta a Dream Clean by DC para activar tu acceso al portal.'},
+  cp_request_quote:{en:'Request a quote',es:'Solicitar cotización'}, cp_request_quote_title:{en:'Request a quote',es:'Solicitar una cotización'},
+  cp_request_service:{en:'What service are you interested in?',es:'¿Qué servicio te interesa?'}, cp_request_notes:{en:'Tell us more (optional)',es:'Cuéntanos más (opcional)'},
+  cp_request_submit:{en:'Send request',es:'Enviar solicitud'}, cp_request_sent:{en:'Your request was sent. We will follow up soon.',es:'Tu solicitud fue enviada. Te contactaremos pronto.'},
+  cp_past_services:{en:'Service history',es:'Historial de servicios'}, cp_no_past:{en:'No completed services yet.',es:'Aún no hay servicios completados.'},
+  portal_status:{en:'Client portal access',es:'Acceso al portal del cliente'}, portal_active:{en:'Active',es:'Activo'}, portal_not_active:{en:'Not activated',es:'No activado'},
+  portal_invite_hint:{en:'Ask them to sign up in the portal using this exact email to link automatically.',es:'Pídeles crear una cuenta en el portal usando este mismo correo para vincularse automáticamente.'},
+  err_generic:{en:'Something went wrong. Please try again.',es:'Algo salió mal. Intenta de nuevo.'}
+};
+function t(k){ return (T[k]&&T[k][LANG]) || (T[k]&&T[k].en) || k; }
+
+const SERVICE_META = {}; // filled from DB: id -> {name:{en,es}, desc:{en,es}, category, unit, rate}
+const QUOTE_STATUSES=['draft','sent','approved','declined','converted'];
+const JOB_STATUSES=['requested','scheduled','in_progress','completed'];
+const INVOICE_STATUSES=['draft','sent','paid','partial','overdue'];
+const RECURRING_CODES=['none','weekly','biweekly','monthly','turnover'];
+const PAYMENT_METHODS=['cash','check','card','bank','zelle'];
+const STATUS_KEY_MAP={draft:'st_draft',sent:'st_sent',approved:'st_approved',declined:'st_declined',converted:'st_converted',requested:'st_requested',scheduled:'st_scheduled',in_progress:'st_inprogress',completed:'st_completed',paid:'st_paid',partial:'st_partial',overdue:'st_overdue'};
+function statusLabel(c){ return t(STATUS_KEY_MAP[c]||c); }
+function statusBadgeClass(c){ const m={draft:'badge-gray',sent:'badge-info',approved:'badge-success',declined:'badge-danger',converted:'badge-sage',requested:'badge-gray',scheduled:'badge-gold',in_progress:'badge-info',completed:'badge-success',paid:'badge-success',partial:'badge-gold',overdue:'badge-danger'}; return m[c]||'badge-gray'; }
+function recurringLabel(c){ const m={none:'rec_none',weekly:'rec_weekly',biweekly:'rec_biweekly',monthly:'rec_monthly',turnover:'rec_turnover'}; return t(m[c]||'rec_none'); }
+function paymentMethodLabel(c){ const m={cash:'pm_cash',check:'pm_check',card:'pm_card',bank:'pm_bank',zelle:'pm_zelle'}; return t(m[c]||'pm_cash'); }
+function L(val){ if(val==null) return ''; if(typeof val==='object') return val[LANG]||val.en||val.es||''; return val; }
+function svcName(svc){ return svc? L(svc.name): ''; }
+function svcDesc(svc){ return svc? L(svc.desc): ''; }
+function getService(id){ return SERVICE_META[id]; }
+function categoryLabel(code){ return code==='commercial'? t('commercial'): t('residential'); }
+function unitLabel(u){ const m={flat:'unit_flat',visit:'unit_visit',turnover:'unit_turnover'}; return t(m[u]||'unit_flat'); }
+
+let state = null; // populated after login (staff) — mirrors previous local-app shape
+let clientPortalData = null; // populated after login (client)
+let myProfile = null;
+let route='dashboard', subRoute=null;
+
+function uid(p){ return p+'_'+Math.random().toString(36).slice(2,9); }
+function fmtMoney(n){ n=Number(n)||0; const l=LANG==='es'?'es-ES':'en-US'; return '$'+n.toLocaleString(l,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDate(iso){ if(!iso) return '—'; const d=new Date(iso+'T00:00:00'); const l=LANG==='es'?'es-ES':'en-US'; return d.toLocaleDateString(l,{day:'2-digit',month:'short',year:'numeric'}); }
+function fmtDateShort(iso){ const d=new Date(iso+'T00:00:00'); const l=LANG==='es'?'es-ES':'en-US'; return d.toLocaleDateString(l,{day:'2-digit',month:'short'}); }
+function getClient(id){ return state.clients.find(c=>c.id===id); }
+function getTeamMember(id){ return state.team.find(x=>x.id===id); }
+function calcLineItemsTotal(items){ return items.reduce((s,i)=>s+(Number(i.qty)||0)*(Number(i.rate)||0),0); }
+function calcQuoteTotal(q){ const sub=calcLineItemsTotal(q.items); const tax=sub*(Number(q.taxRate)||0)/100; return {sub,tax,total:sub+tax}; }
+function calcInvoiceTotal(inv){ const sub=calcLineItemsTotal(inv.items); const tax=sub*(Number(inv.taxRate)||0)/100; const total=sub+tax; const balance=total-(Number(inv.amountPaid)||0); return {sub,tax,total,balance}; }
+function initials(name){ return (name||'').split(' ').filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase(); }
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function todayISO(off){ const d=new Date(); d.setDate(d.getDate()+(off||0)); return d.toISOString().slice(0,10); }
+function toast(msg, icon){ const wrap=document.getElementById('toast-wrap'); const el=document.createElement('div'); el.className='toast'; el.innerHTML=(icon||ICONS.check)+'<span>'+escapeHtml(msg)+'</span>'; wrap.appendChild(el); setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300);},3200); }
+function setLang(l){ LANG=l; localStorage.setItem('dreamclean_lang', l); rerenderCurrentScreen(); }
+function rerenderCurrentScreen(){
+  if(document.getElementById('app-shell').classList.contains('visible')) render();
+  else if(document.getElementById('client-portal').classList.contains('visible')) renderClientPortal();
+  else renderAuthScreen();
+}
+
+/* ============================== AUTH ============================== */
+function renderAuthScreen(mode){
+  mode = mode || 'signin';
+  const screen = document.getElementById('auth-screen');
+  const brandMark = `<svg class="auth-mark" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="47" stroke="#C9A227" stroke-width="2.5"/><circle cx="50" cy="50" r="41" stroke="#C9A227" stroke-width="0.75"/><text x="50" y="61" text-anchor="middle" font-family="Playfair Display, serif" font-size="34" fill="#3A332C">DC</text></svg>`;
+  screen.style.display = 'flex';
+  document.getElementById('app-shell').classList.remove('visible');
+  document.getElementById('client-portal').classList.remove('visible');
+  if(mode==='signup'){
+    screen.innerHTML = `
+      <div class="auth-lang"><button class="lang-btn ${LANG==='en'?'active':''}" onclick="setLang('en')">EN</button><button class="lang-btn ${LANG==='es'?'active':''}" onclick="setLang('es')">ES</button></div>
+      <div class="auth-card">
+        ${brandMark}
+        <h2>${t('auth_signup_title')}</h2>
+        <div class="sub">${t('auth_sub')}</div>
+        <div class="auth-msg" id="auth-msg"></div>
+        <div class="form-row"><label>${t('lbl_name')}</label><input id="su-name"></div>
+        <div class="form-row"><label>${t('lbl_email')}</label><input id="su-email" type="email"></div>
+        <div class="form-row"><label>${t('lbl_password')}</label><input id="su-password" type="password"></div>
+        <button class="btn btn-gold btn-block" onclick="doSignUp()">${t('signup_btn')}</button>
+        <button class="auth-toggle" onclick="renderAuthScreen('signin')">${t('have_account')}</button>
+      </div>`;
+  } else {
+    screen.innerHTML = `
+      <div class="auth-lang"><button class="lang-btn ${LANG==='en'?'active':''}" onclick="setLang('en')">EN</button><button class="lang-btn ${LANG==='es'?'active':''}" onclick="setLang('es')">ES</button></div>
+      <div class="auth-card">
+        ${brandMark}
+        <h2>${t('auth_signin_title')}</h2>
+        <div class="sub">${t('auth_sub')}</div>
+        <div class="auth-msg" id="auth-msg"></div>
+        <div class="form-row"><label>${t('lbl_email')}</label><input id="si-email" type="email"></div>
+        <div class="form-row"><label>${t('lbl_password')}</label><input id="si-password" type="password"></div>
+        <button class="btn btn-gold btn-block" onclick="doSignIn()">${t('signin_btn')}</button>
+        <button class="auth-toggle" onclick="renderAuthScreen('signup')">${t('no_account')}</button>
+      </div>`;
+  }
+}
+function showAuthMsg(msg, kind){
+  const box = document.getElementById('auth-msg');
+  if(!box) return;
+  box.textContent = msg;
+  box.className = 'auth-msg show ' + (kind||'error');
+}
+async function doSignUp(){
+  const full_name = document.getElementById('su-name').value.trim();
+  const email = document.getElementById('su-email').value.trim();
+  const password = document.getElementById('su-password').value;
+  if(!full_name || !email || password.length<6){ showAuthMsg(t('err_generic'),'error'); return; }
+  const { data, error } = await sb.auth.signUp({ email, password, options:{ data:{ full_name } } });
+  if(error){ showAuthMsg(error.message, 'error'); return; }
+  if(data.session){ await afterLogin(); }
+  else { showAuthMsg(t('check_email'), 'ok'); }
+}
+async function doSignIn(){
+  const email = document.getElementById('si-email').value.trim();
+  const password = document.getElementById('si-password').value;
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  if(error){ showAuthMsg(error.message, 'error'); return; }
+  await afterLogin();
+}
+async function doSignOut(){
+  await sb.auth.signOut();
+  state = null; clientPortalData = null; myProfile = null;
+  renderAuthScreen('signin');
+}
+async function afterLogin(){
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user){ renderAuthScreen('signin'); return; }
+  const { data: profile, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  if(error || !profile){ showAuthMsg(t('err_generic'),'error'); return; }
+  myProfile = profile;
+  await loadServiceMeta();
+  if(profile.role === 'staff'){
+    await loadStaffData();
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('app-shell').classList.add('visible');
+    route='dashboard'; subRoute=null;
+    render();
+  } else {
+    await loadClientPortalData(profile.client_id);
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('client-portal').classList.add('visible');
+    renderClientPortal();
+    checkPaymentReturn();
+  }
+}
+
+async function loadServiceMeta(){
+  const { data, error } = await sb.from('services').select('*');
+  if(error) return;
+  data.forEach(s=>{
+    SERVICE_META[s.id] = { id:s.id, name:{en:s.name_en, es:s.name_es}, desc:{en:s.desc_en, es:s.desc_es}, category:s.category, unit:s.unit, rate:Number(s.rate) };
+  });
+}
+
+/* ============================ STAFF DATA LAYER ============================ */
+async function loadStaffData(){
+  const [clientsRes, propsRes, teamRes, quotesRes, jobsRes, invRes, bizRes, profilesRes] = await Promise.all([
+    sb.from('clients').select('*').order('name'),
+    sb.from('properties').select('*'),
+    sb.from('team_members').select('*'),
+    sb.from('quotes').select('*, quote_items(*)').order('created_at', {ascending:false}),
+    sb.from('jobs').select('*'),
+    sb.from('invoices').select('*, invoice_items(*)').order('issue_date', {ascending:false}),
+    sb.from('business_settings').select('*').eq('id',1).single(),
+    sb.from('profiles').select('id, client_id, role').eq('role','client')
+  ]);
+  const props = propsRes.data || [];
+  state = {
+    clients: (clientsRes.data||[]).map(c=>({ ...c, properties: props.filter(p=>p.client_id===c.id) })),
+    team: teamRes.data || [],
+    linkedClientIds: new Set((profilesRes.data||[]).filter(p=>p.client_id).map(p=>p.client_id)),
+    quotes: (quotesRes.data||[]).map(q=>({
+      id:q.id, clientId:q.client_id, propertyId:q.property_id, service:q.service_id, status:q.status,
+      notes:q.notes, taxRate:Number(q.tax_rate)||0, createdAt:(q.created_at||'').slice(0,10),
+      items:(q.quote_items||[]).map(it=>({id:it.id, desc:it.description, qty:Number(it.qty), rate:Number(it.rate)}))
+    })),
+    jobs: (jobsRes.data||[]).map(j=>({
+      id:j.id, quoteId:j.quote_id, clientId:j.client_id, propertyId:j.property_id, service:j.service_id, status:j.status,
+      date:j.job_date, time:(j.job_time||'').slice(0,5), duration:Number(j.duration), assignedTo:j.assigned_to,
+      recurring:j.recurring, notes:j.notes
+    })),
+    invoices: (invRes.data||[]).map(inv=>({
+      id:inv.id, invoiceNumber:inv.invoice_number, jobId:inv.job_id, clientId:inv.client_id, status:inv.status,
+      issueDate:inv.issue_date, dueDate:inv.due_date, taxRate:Number(inv.tax_rate)||0, amountPaid:Number(inv.amount_paid)||0,
+      paymentMethod:inv.payment_method,
+      items:(inv.invoice_items||[]).map(it=>({id:it.id, desc:it.description, qty:Number(it.qty), rate:Number(it.rate)}))
+    })),
+    business: bizRes.data ? {
+      name:bizRes.data.name, tagline:bizRes.data.tagline, phone:bizRes.data.phone, email:bizRes.data.email,
+      website:bizRes.data.website, address:bizRes.data.address, taxRate:Number(bizRes.data.tax_rate)||0
+    } : { name:'Dream Clean by DC', taxRate:0 }
+  };
+}
+function serviceOptionsHtml(selected){
+  return Object.values(SERVICE_META).map(s=>`<option value="${s.id}" ${selected===s.id?'selected':''}>${svcName(s)}</option>`).join('');
+}
+function clientPortalLinked(clientId){ return !!(state.linkedClientIds && state.linkedClientIds.has(clientId)); }
+
+/* ================================= ROUTER / NAV ================================= */
+const NAV_ITEMS=[{route:'dashboard',key:'nav_dashboard',icon:'dashboard'},{route:'clients',key:'nav_clients',icon:'clients'},{route:'quotes',key:'nav_quotes',icon:'quotes'},{route:'jobs',key:'nav_jobs',icon:'jobs'},{route:'calendar',key:'nav_calendar',icon:'calendar'},{route:'invoices',key:'nav_invoices',icon:'invoices'},{route:'reports',key:'nav_reports',icon:'reports'},{route:'settings',key:'nav_settings',icon:'settings'}];
+const PAGE_TITLE_KEYS={dashboard:['nav_dashboard','dashboard_sub'],clients:['nav_clients','clients_sub'],quotes:['nav_quotes','quotes_sub'],jobs:['nav_jobs','jobs_sub'],calendar:['nav_calendar','calendar_sub'],invoices:['nav_invoices','invoices_sub'],reports:['nav_reports','reports_sub'],settings:['nav_settings','settings_sub']};
+function navigate(r,sub){ route=r; subRoute=sub||null; render(); window.scrollTo(0,0); }
+function renderNav(){
+  document.getElementById('nav-list').innerHTML = NAV_ITEMS.map(item=>`<li><a href="#" class="${route===item.route?'active':''}" onclick="navigate('${item.route}');return false;">${ICONS[item.icon]}<span>${t(item.key)}</span></a></li>`).join('');
+  document.getElementById('sidebar-lang').innerHTML = `<button class="lang-btn ${LANG==='en'?'active':''}" onclick="setLang('en')">EN</button><button class="lang-btn ${LANG==='es'?'active':''}" onclick="setLang('es')">ES</button>`;
+  document.getElementById('sidebar-footer-label').textContent = t('sidebar_footer');
+  document.getElementById('signout-label').textContent = t('sign_out');
+  document.getElementById('new-btn-label').textContent = t('btn_new');
+}
+function render(){
+  renderNav();
+  const keys = PAGE_TITLE_KEYS[route]||['nav_dashboard',''];
+  document.getElementById('page-title').textContent = t(keys[0]);
+  document.getElementById('page-sub').textContent = t(keys[1]);
+  const view = document.getElementById('view');
+  if(route==='dashboard') view.innerHTML = renderDashboard();
+  else if(route==='clients') view.innerHTML = subRoute? renderClientDetail(subRoute): renderClients();
+  else if(route==='quotes') view.innerHTML = renderQuotes();
+  else if(route==='jobs') view.innerHTML = renderJobs();
+  else if(route==='calendar') view.innerHTML = renderCalendar();
+  else if(route==='invoices') view.innerHTML = subRoute? renderInvoiceDetail(subRoute): renderInvoices();
+  else if(route==='reports') view.innerHTML = renderReports();
+  else if(route==='settings') view.innerHTML = renderSettings();
+}
+
+/* ================================ DASHBOARD ================================ */
+function renderDashboard(){
+  const today = todayISO(0);
+  const upcomingJobs = state.jobs.filter(j=>j.date>=today && j.status!=='completed').sort((a,b)=>a.date.localeCompare(b.date));
+  const todaysJobs = state.jobs.filter(j=>j.date===today);
+  const outstandingInvoices = state.invoices.filter(i=>['sent','overdue','partial'].includes(i.status));
+  const outstandingTotal = outstandingInvoices.reduce((s,i)=>s+calcInvoiceTotal(i).balance,0);
+  const paidToDate = state.invoices.filter(i=>i.status==='paid').reduce((s,i)=>s+(Number(i.amountPaid)||0),0);
+  const pendingQuotes = state.quotes.filter(q=>q.status==='sent'||q.status==='draft');
+  return `
+    <div class="helper-note">${ICONS.info}<div>${t('helper_note')}</div></div>
+    <div class="grid grid-4" style="margin-bottom:20px;">
+      <div class="card kpi"><span class="small-caps">${t('kpi_active_clients')}</span><div class="value">${state.clients.length}</div>
+        <div class="delta">${state.clients.filter(c=>c.type==='residential').length} ${t('residential').toLowerCase()} · ${state.clients.filter(c=>c.type==='commercial').length} ${t('commercial').toLowerCase()}</div></div>
+      <div class="card kpi"><span class="small-caps">${t('kpi_upcoming_jobs')}</span><div class="value">${upcomingJobs.length}</div><div class="delta">${todaysJobs.length} ${t('scheduled_today')}</div></div>
+      <div class="card kpi"><span class="small-caps">${t('kpi_outstanding')}</span><div class="value">${fmtMoney(outstandingTotal)}</div><div class="delta ${state.invoices.some(i=>i.status==='overdue')?'down':''}">${state.invoices.filter(i=>i.status==='overdue').length} ${t('overdue_invoices_suffix')}</div></div>
+      <div class="card kpi"><span class="small-caps">${t('kpi_collected')}</span><div class="value">${fmtMoney(paidToDate)}</div><div class="delta up">${state.invoices.filter(i=>i.status==='paid').length} ${t('paid_invoices_suffix')}</div></div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-head"><h3>${t('todays_schedule')} — ${fmtDate(today)}</h3><button class="btn btn-outline btn-sm" onclick="navigate('calendar')">${t('view_calendar')} ${ICONS.arrow}</button></div>
+        ${todaysJobs.length? `<div class="table-wrap"><table><thead><tr><th>${t('th_time')}</th><th>${t('th_client')}</th><th>${t('th_service')}</th><th>${t('th_team')}</th><th>${t('th_status')}</th></tr></thead><tbody>
+        ${todaysJobs.sort((a,b)=>a.time.localeCompare(b.time)).map(j=>{ const c=getClient(j.clientId); const svc=getService(j.service); const tm=getTeamMember(j.assignedTo);
+          return `<tr onclick="openJobModal('${j.id}')"><td>${j.time}</td><td class="row-name">${escapeHtml(c?c.name:'—')}</td><td>${svcName(svc)}</td><td>${tm?escapeHtml(tm.name):t('unassigned')}</td><td><span class="badge ${statusBadgeClass(j.status)}"><span class="badge-dot"></span>${statusLabel(j.status)}</span></td></tr>`;
+        }).join('')}</tbody></table></div>` : `<div class="empty">${ICONS.calendar}<h4>${t('no_jobs_today')}</h4></div>`}
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>${t('pending_quotes')}</h3></div>
+        ${pendingQuotes.length? pendingQuotes.map(q=>{ const c=getClient(q.clientId); const tt=calcQuoteTotal(q);
+          return `<div class="job-card" onclick="openQuoteModal('${q.id}')"><div class="jc-title">${escapeHtml(c?c.name:'—')} — ${fmtMoney(tt.total)}</div><div class="jc-meta"><span class="badge ${statusBadgeClass(q.status)}">${statusLabel(q.status)}</span></div></div>`;
+        }).join('') : `<div class="empty" style="padding:26px 10px;">${ICONS.quotes}<div>${t('no_pending_quotes')}</div></div>`}
+        <button class="btn btn-outline btn-sm btn-block" style="margin-top:6px;" onclick="openQuoteModal()">+ ${t('new_quote')}</button>
+      </div>
+    </div>
+    <div class="grid grid-2" style="margin-top:18px;">
+      <div class="card"><div class="card-head"><h3>${t('invoices_due')}</h3><button class="btn btn-outline btn-sm" onclick="navigate('invoices')">${t('view_all')} ${ICONS.arrow}</button></div>
+        ${outstandingInvoices.length? `<div class="table-wrap"><table><thead><tr><th>${t('th_invoice_num')}</th><th>${t('th_client')}</th><th>${t('th_due')}</th><th>${t('th_balance')}</th><th>${t('th_status')}</th></tr></thead><tbody>
+        ${outstandingInvoices.map(inv=>{ const c=getClient(inv.clientId); const tt=calcInvoiceTotal(inv);
+          return `<tr onclick="navigate('invoices','${inv.id}')"><td>#${inv.id.slice(0,6)}</td><td class="row-name">${escapeHtml(c?c.name:'—')}</td><td>${fmtDateShort(inv.dueDate)}</td><td>${fmtMoney(tt.balance)}</td><td><span class="badge ${statusBadgeClass(inv.status)}">${statusLabel(inv.status)}</span></td></tr>`;
+        }).join('')}</tbody></table></div>` : `<div class="empty">${ICONS.check}<div>${t('all_collected')}</div></div>`}
+      </div>
+      <div class="card"><div class="card-head"><h3>${t('team')}</h3><button class="btn btn-outline btn-sm" onclick="navigate('settings')">${t('manage')} ${ICONS.arrow}</button></div>
+        ${state.team.map(tm=>{ const jobsToday=state.jobs.filter(j=>j.assignedTo===tm.id&&j.date===today).length;
+          return `<div class="info-line" style="justify-content:space-between;"><span style="display:flex;align-items:center;gap:10px;"><span class="avatar-circle" style="width:34px;height:34px;font-size:13px;background:${tm.color}22;color:${tm.color};">${initials(tm.name)}</span><span><b>${escapeHtml(tm.name)}</b><br><span class="muted" style="font-size:11.5px;">${escapeHtml(tm.role||'')}</span></span></span><span class="badge badge-gray">${jobsToday} ${t('today')}</span></div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
+/* ================================= CLIENTS ================================ */
+let clientFilter='all', clientSearch='';
+function renderClients(){
+  let list = state.clients.slice();
+  if(clientFilter!=='all') list = list.filter(c=>c.type===clientFilter);
+  list.sort((a,b)=>a.name.localeCompare(b.name));
+  return `
+    <div class="toolbar"><div class="filters">${[['all','filter_all'],['residential','filter_residential'],['commercial','filter_commercial']].map(([code,key])=>`<button class="chip ${clientFilter===code?'active':''}" onclick="clientFilter='${code}';render();">${t(key)}</button>`).join('')}</div>
+    <button class="btn btn-gold" onclick="openClientModal()">+ ${t('new_client')}</button></div>
+    <div class="card" style="padding:0;"><div class="table-wrap"><table><thead><tr><th>${t('th_client')}</th><th>${t('th_type')}</th><th>${t('th_properties')}</th><th>${t('th_contact')}</th><th>${t('th_since')}</th><th></th></tr></thead><tbody>
+    ${list.length? list.map(c=>`<tr onclick="navigate('clients','${c.id}')"><td class="row-name"><span style="display:flex;align-items:center;gap:10px;"><span class="avatar-circle" style="width:36px;height:36px;font-size:13px;">${initials(c.name)}</span>${escapeHtml(c.name)}</span></td><td><span class="badge ${c.type==='commercial'?'badge-info':'badge-sage'}">${categoryLabel(c.type)}</span></td><td>${c.properties.length}</td><td><span class="muted">${escapeHtml(c.phone||'')}</span></td><td>${fmtDate((c.created_at||'').slice(0,10))}</td><td onclick="event.stopPropagation()"><button class="btn-icon" onclick="openClientModal('${c.id}')">${ICONS.edit}</button></td></tr>`).join('')
+    : `<tr><td colspan="6"><div class="empty">${ICONS.clients}<h4>${t('no_clients')}</h4></div></td></tr>`}
+    </tbody></table></div></div>`;
+}
+function renderClientDetail(id){
+  const c = getClient(id);
+  if(!c) return `<div class="empty">${t('back')} <button class="link-btn" onclick="navigate('clients')">${t('back')}</button></div>`;
+  const cq = state.quotes.filter(q=>q.clientId===id), cj = state.jobs.filter(j=>j.clientId===id), ci = state.invoices.filter(i=>i.clientId===id);
+  const lifetime = ci.filter(i=>i.status==='paid').reduce((s,i)=>s+(Number(i.amountPaid)||0),0);
+  return `
+    <button class="btn-icon" style="margin-bottom:16px;" onclick="navigate('clients')">${ICONS.arrow.replace('stroke-width="2.2"','stroke-width="2.2" style="transform:rotate(180deg)"')}</button>
+    <div class="card"><div class="detail-header"><div style="display:flex;gap:16px;align-items:flex-start;"><span class="avatar-circle">${initials(c.name)}</span><div><h2 style="font-size:22px;">${escapeHtml(c.name)}</h2><div class="tag-list"><span class="badge ${c.type==='commercial'?'badge-info':'badge-sage'}">${categoryLabel(c.type)}</span></div></div></div>
+      <div style="display:flex;gap:8px;"><button class="btn btn-outline btn-sm" onclick="openClientModal('${c.id}')">${ICONS.edit} ${t('edit')}</button><button class="btn btn-gold btn-sm" onclick="openQuoteModal(null,'${c.id}')">+ ${t('nav_quotes')}</button></div></div>
+      <div class="grid grid-2"><div>
+        <div class="info-line">${ICONS.mail}<b>${escapeHtml(c.email||'')}</b></div><div class="info-line">${ICONS.phone}<b>${escapeHtml(c.phone||'')}</b></div>
+        ${c.properties.map(p=>`<div class="info-line">${ICONS.pin}<b>${escapeHtml(p.label||'')}:</b>&nbsp;${escapeHtml(p.address||'')}</div>`).join('')}
+        ${c.notes? `<div class="info-line" style="align-items:flex-start;">${ICONS.info}<span>${escapeHtml(c.notes)}</span></div>`:''}
+        <div class="info-line">${ICONS.user}<b>${t('portal_status')}:</b>&nbsp;<span class="badge ${clientPortalLinked(c.id)?'badge-success':'badge-gray'}"><span class="badge-dot"></span>${clientPortalLinked(c.id)?t('portal_active'):t('portal_not_active')}</span></div>
+        ${!clientPortalLinked(c.id)? `<div class="muted" style="font-size:11.5px;margin-top:-4px;margin-left:23px;">${t('portal_invite_hint')}</div>`:''}
+      </div><div class="card" style="background:var(--bg-2);box-shadow:none;"><span class="small-caps">${t('client_lifetime_value')}</span><div style="font-family:'Playfair Display',serif;font-size:26px;margin-top:6px;">${fmtMoney(lifetime)}</div></div></div>
+    </div>
+    <div class="grid grid-3" style="margin-top:18px;">
+      <div class="card"><div class="card-head"><h3 style="font-size:15px;">${t('section_quotes')}</h3></div>${cq.length? cq.map(q=>`<div class="job-card" onclick="openQuoteModal('${q.id}')"><div class="jc-title">${fmtMoney(calcQuoteTotal(q).total)}</div><div class="jc-meta"><span class="badge ${statusBadgeClass(q.status)}">${statusLabel(q.status)}</span></div></div>`).join(''):`<div class="muted" style="font-size:12.5px;">${t('no_quotes')}</div>`}</div>
+      <div class="card"><div class="card-head"><h3 style="font-size:15px;">${t('section_jobs')}</h3></div>${cj.length? cj.map(j=>`<div class="job-card" onclick="openJobModal('${j.id}')"><div class="jc-title">${svcName(getService(j.service))}</div><div class="jc-meta">${ICONS.calendar}${fmtDateShort(j.date)} · <span class="badge ${statusBadgeClass(j.status)}">${statusLabel(j.status)}</span></div></div>`).join(''):`<div class="muted" style="font-size:12.5px;">${t('no_jobs')}</div>`}</div>
+      <div class="card"><div class="card-head"><h3 style="font-size:15px;">${t('section_invoices')}</h3></div>${ci.length? ci.map(inv=>`<div class="job-card" onclick="navigate('invoices','${inv.id}')"><div class="jc-title">${fmtMoney(calcInvoiceTotal(inv).total)}</div><div class="jc-meta"><span class="badge ${statusBadgeClass(inv.status)}">${statusLabel(inv.status)}</span></div></div>`).join(''):`<div class="muted" style="font-size:12.5px;">${t('no_invoices')}</div>`}</div>
+    </div>`;
+}
+function openClientModal(id){
+  const c = id? getClient(id): null;
+  const propsHtml = (c? c.properties: [{label:'',address:''}]).map(p=>`<div class="line-item-row" style="grid-template-columns:1fr 1.4fr 32px;" data-prop-row><input placeholder="${t('ph_prop_label')}" value="${escapeHtml(p.label||'')}" data-prop-label><input placeholder="${t('ph_prop_address')}" value="${escapeHtml(p.address||'')}" data-prop-address><button class="li-remove" onclick="this.closest('[data-prop-row]').remove()">✕</button></div>`).join('');
+  openModal(`
+    <div class="modal-head"><h3>${c?t('edit_client'):t('new_client_title')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid"><div class="form-row"><label>${t('lbl_full_name')}</label><input id="f-name" value="${c?escapeHtml(c.name):''}"></div>
+      <div class="form-row"><label>${t('lbl_client_type')}</label><select id="f-type"><option value="residential" ${c?.type==='residential'?'selected':''}>${t('residential')}</option><option value="commercial" ${c?.type==='commercial'?'selected':''}>${t('commercial')}</option></select></div></div>
+      <div class="form-grid"><div class="form-row"><label>${t('lbl_email')}</label><input id="f-email" value="${c?escapeHtml(c.email||''):''}"></div><div class="form-row"><label>${t('lbl_phone')}</label><input id="f-phone" value="${c?escapeHtml(c.phone||''):''}"></div></div>
+      <div class="form-row"><label>${t('lbl_properties')}</label><div id="prop-rows">${propsHtml}</div><button class="btn btn-outline btn-sm" style="margin-top:6px;" onclick="addPropRow()">+ ${t('add_property')}</button></div>
+      <div class="form-row"><label>${t('lbl_notes')}</label><textarea id="f-notes">${c?escapeHtml(c.notes||''):''}</textarea></div>
+    </div>
+    <div class="modal-foot">${c?`<button class="btn btn-danger" style="margin-right:auto;" onclick="deleteClient('${c.id}')">${ICONS.trash} ${t('delete')}</button>`:''}<button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="saveClient(${c?`'${c.id}'`:'null'})">${t('save_client')}</button></div>`);
+}
+function addPropRow(){ const wrap=document.getElementById('prop-rows'); const div=document.createElement('div'); div.className='line-item-row'; div.style.gridTemplateColumns='1fr 1.4fr 32px'; div.setAttribute('data-prop-row',''); div.innerHTML=`<input placeholder="${t('ph_prop_label')}" data-prop-label><input placeholder="${t('ph_prop_address')}" data-prop-address><button class="li-remove" onclick="this.closest('[data-prop-row]').remove()">✕</button>`; wrap.appendChild(div); }
+async function saveClient(id){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name){ toast(t('err_generic'), ICONS.info); return; }
+  const type=document.getElementById('f-type').value, email=document.getElementById('f-email').value.trim(), phone=document.getElementById('f-phone').value.trim(), notes=document.getElementById('f-notes').value.trim();
+  const propRows = document.querySelectorAll('[data-prop-row]');
+  const properties = [];
+  propRows.forEach(r=>{ const label=r.querySelector('[data-prop-label]').value.trim(); const address=r.querySelector('[data-prop-address]').value.trim(); if(label||address) properties.push({label:label||'Property', address}); });
+  let clientId = id;
+  if(id){
+    const { error } = await sb.from('clients').update({name,type,email,phone,notes}).eq('id', id);
+    if(error){ toast(error.message, ICONS.info); return; }
+  } else {
+    const { data, error } = await sb.from('clients').insert({name,type,email,phone,notes}).select().single();
+    if(error){ toast(error.message, ICONS.info); return; }
+    clientId = data.id;
+  }
+  await sb.from('properties').delete().eq('client_id', clientId);
+  if(properties.length){ await sb.from('properties').insert(properties.map(p=>({...p, client_id: clientId}))); }
+  await loadStaffData(); closeModal(); navigate('clients', route==='clients'&&subRoute? clientId: null);
+  toast(t('save_changes'));
+}
+async function deleteClient(id){
+  if(!confirm(t('confirm_delete_client'))) return;
+  const { error } = await sb.from('clients').delete().eq('id', id);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); closeModal(); navigate('clients');
+  toast(t('delete'));
+}
+
+/* ================================= QUOTES ================================= */
+let quoteFilter='all';
+function renderQuotes(){
+  let list = state.quotes.slice();
+  if(quoteFilter!=='all') list = list.filter(q=>q.status===quoteFilter);
+  list.sort((a,b)=>b.createdAt.localeCompare(a.createdAt));
+  return `<div class="toolbar"><div class="filters"><button class="chip ${quoteFilter==='all'?'active':''}" onclick="quoteFilter='all';render();">${t('filter_all')}</button>${QUOTE_STATUSES.map(s=>`<button class="chip ${quoteFilter===s?'active':''}" onclick="quoteFilter='${s}';render();">${statusLabel(s)}</button>`).join('')}</div><button class="btn btn-gold" onclick="openQuoteModal()">+ ${t('new_quote_btn')}</button></div>
+  <div class="card" style="padding:0;"><div class="table-wrap"><table><thead><tr><th>${t('th_client')}</th><th>${t('th_service')}</th><th>${t('th_total')}</th><th>${t('th_status')}</th><th>${t('th_date')}</th><th></th></tr></thead><tbody>
+  ${list.length? list.map(q=>{ const c=getClient(q.clientId); const svc=getService(q.service); const tt=calcQuoteTotal(q);
+    return `<tr onclick="openQuoteModal('${q.id}')"><td class="row-name">${escapeHtml(c?c.name:'—')}<span class="sub">${c?categoryLabel(c.type):''}</span></td><td>${svcName(svc)}</td><td>${fmtMoney(tt.total)}</td><td><span class="badge ${statusBadgeClass(q.status)}"><span class="badge-dot"></span>${statusLabel(q.status)}</span></td><td>${fmtDateShort(q.createdAt)}</td><td onclick="event.stopPropagation()">${q.status==='approved'?`<button class="btn btn-sage btn-sm" onclick="convertQuoteToJob('${q.id}')">${t('convert_to_job')}</button>`:''}</td></tr>`;
+  }).join('') : `<tr><td colspan="6"><div class="empty">${ICONS.quotes}<h4>${t('no_quotes_title')}</h4></div></td></tr>`}</tbody></table></div></div>`;
+}
+function openQuoteModal(id, presetClientId){
+  const q = id? state.quotes.find(x=>x.id===id): null;
+  const clientOptions = state.clients.map(c=>`<option value="${c.id}" ${((q?q.clientId:presetClientId)===c.id)?'selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  const items = q? q.items: [{desc:'',qty:1,rate:0}];
+  const tt = q? calcQuoteTotal(q): {sub:0,tax:0,total:0};
+  openModal(`
+    <div class="modal-head"><h3>${q?t('edit_quote'):t('new_quote_modal')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid"><div class="form-row"><label>${t('th_client')}</label><select id="q-client">${clientOptions}</select></div><div class="form-row"><label>${t('lbl_service_type')}</label><select id="q-service" onchange="prefillServiceItem()">${serviceOptionsHtml(q?.service)}</select></div></div>
+      <div class="form-row"><label>${t('lbl_status')}</label><select id="q-status">${QUOTE_STATUSES.map(s=>`<option value="${s}" ${q?.status===s?'selected':''}>${statusLabel(s)}</option>`).join('')}</select></div>
+      <div class="form-row"><label>${t('lbl_line_items')}</label><div class="line-items" id="q-items">${items.map(it=>lineItemRowHtml(it)).join('')}</div><button class="btn btn-outline btn-sm" onclick="addLineItem('q-items')">+ ${t('add_line_item')}</button></div>
+      <div class="totals-box" id="q-totals">${totalsBoxHtml(tt)}</div>
+      <div class="form-row" style="margin-top:10px;"><label>${t('lbl_notes')}</label><textarea id="q-notes" placeholder="${t('ph_quote_notes')}">${q?escapeHtml(q.notes||''):''}</textarea></div>
+    </div>
+    <div class="modal-foot">${q?`<button class="btn btn-danger" style="margin-right:auto;" onclick="deleteQuote('${q.id}')">${ICONS.trash} ${t('delete')}</button>`:''}<button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="saveQuote(${q?`'${q.id}'`:'null'})">${t('save_quote')}</button></div>`);
+  attachLineItemListeners('q-items','q-totals');
+}
+function prefillServiceItem(){ const svcId=document.getElementById('q-service').value; const svc=getService(svcId); const wrap=document.getElementById('q-items'); if(wrap.children.length===1){ const row=wrap.children[0]; if(!row.querySelector('[data-li-desc]').value){ row.querySelector('[data-li-desc]').value=svcName(svc); row.querySelector('[data-li-rate]').value=svc.rate; recalcTotals('q-items','q-totals'); } } }
+function lineItemRowHtml(it){ return `<div class="line-item-row" data-li-row><input placeholder="${t('ph_desc')}" value="${escapeHtml(it.desc||'')}" data-li-desc><input type="number" min="0" step="1" placeholder="${t('ph_qty')}" value="${it.qty||1}" data-li-qty><input type="number" min="0" step="0.01" placeholder="${t('ph_price')}" value="${it.rate||0}" data-li-rate><button class="li-remove" onclick="this.closest('[data-li-row]').remove(); recalcTotals(this.closest('.modal-body').querySelector('.line-items').id, this.closest('.modal-body').querySelector('.totals-box').id);">✕</button></div>`; }
+function totalsBoxHtml(tt){ return `<div class="totals-row"><span>${t('totals_subtotal')}</span><span>${fmtMoney(tt.sub)}</span></div><div class="totals-row"><span>${t('totals_tax')}</span><span>${fmtMoney(tt.tax)}</span></div><div class="totals-row grand"><span>${t('totals_total')}</span><span>${fmtMoney(tt.total)}</span></div>`; }
+function addLineItem(containerId){ const wrap=document.getElementById(containerId); const div=document.createElement('div'); div.innerHTML=lineItemRowHtml({desc:'',qty:1,rate:0}); wrap.appendChild(div.firstElementChild); attachLineItemListeners(containerId, containerId==='q-items'?'q-totals':'i-totals'); }
+function attachLineItemListeners(containerId, totalsId){ const wrap=document.getElementById(containerId); if(!wrap) return; wrap.querySelectorAll('input').forEach(inp=>{ inp.oninput=()=>recalcTotals(containerId, totalsId); }); }
+function readLineItems(containerId){ const wrap=document.getElementById(containerId); const rows=wrap.querySelectorAll('[data-li-row]'); const items=[]; rows.forEach(r=>{ const desc=r.querySelector('[data-li-desc]').value.trim(); const qty=parseFloat(r.querySelector('[data-li-qty]').value)||0; const rate=parseFloat(r.querySelector('[data-li-rate]').value)||0; if(desc||qty||rate) items.push({desc,qty,rate}); }); return items; }
+function recalcTotals(containerId, totalsId){ const items=readLineItems(containerId); const sub=calcLineItemsTotal(items); const tax=sub*(Number(state.business.taxRate)||0)/100; document.getElementById(totalsId).innerHTML=totalsBoxHtml({sub,tax,total:sub+tax}); }
+async function saveQuote(id){
+  const clientId=document.getElementById('q-client').value, service=document.getElementById('q-service').value, status=document.getElementById('q-status').value, notes=document.getElementById('q-notes').value.trim();
+  const items=readLineItems('q-items');
+  if(!items.length){ toast(t('err_generic'), ICONS.info); return; }
+  const client=getClient(clientId); const propertyId = client&&client.properties.length? client.properties[0].id: null;
+  let quoteId = id;
+  if(id){
+    const { error } = await sb.from('quotes').update({client_id:clientId, property_id:propertyId, service_id:service, status, notes, tax_rate: state.business.taxRate}).eq('id', id);
+    if(error){ toast(error.message, ICONS.info); return; }
+  } else {
+    const { data, error } = await sb.from('quotes').insert({client_id:clientId, property_id:propertyId, service_id:service, status, notes, tax_rate: state.business.taxRate}).select().single();
+    if(error){ toast(error.message, ICONS.info); return; }
+    quoteId = data.id;
+  }
+  await sb.from('quote_items').delete().eq('quote_id', quoteId);
+  await sb.from('quote_items').insert(items.map(it=>({quote_id:quoteId, description:it.desc, qty:it.qty, rate:it.rate})));
+  await loadStaffData(); closeModal(); render();
+  toast(t('save_quote'));
+}
+async function deleteQuote(id){ if(!confirm(t('confirm_delete_quote'))) return; const { error } = await sb.from('quotes').delete().eq('id', id); if(error){ toast(error.message, ICONS.info); return; } await loadStaffData(); closeModal(); render(); toast(t('delete')); }
+async function convertQuoteToJob(id){
+  const q = state.quotes.find(x=>x.id===id); if(!q) return;
+  const { error:e1 } = await sb.from('quotes').update({status:'converted'}).eq('id', id);
+  if(e1){ toast(e1.message, ICONS.info); return; }
+  const { error:e2 } = await sb.from('jobs').insert({ quote_id:id, client_id:q.clientId, property_id:q.propertyId, service_id:q.service, status:'requested', job_date: todayISO(3), job_time:'09:00', duration:2, assigned_to: state.team[0]?.id||null, recurring:'none', notes:'Generated from quote' });
+  if(e2){ toast(e2.message, ICONS.info); return; }
+  await loadStaffData(); render();
+  toast(t('convert_to_job'));
+}
+
+/* ================================== JOBS =================================== */
+function renderJobs(){
+  return `<div class="toolbar"><div class="filters"><span class="muted" style="font-size:12.5px;">${t('kanban_hint')}</span></div><button class="btn btn-gold" onclick="openJobModal()">+ ${t('new_job')}</button></div>
+  <div class="kanban">${JOB_STATUSES.map(status=>{ const jobs=state.jobs.filter(j=>j.status===status).sort((a,b)=>a.date.localeCompare(b.date));
+    return `<div class="kanban-col"><div class="kanban-col-head"><span class="small-caps">${statusLabel(status)}</span><span class="kanban-count">${jobs.length}</span></div>
+    ${jobs.map(j=>{ const c=getClient(j.clientId); const svc=getService(j.service); const tm=getTeamMember(j.assignedTo);
+      return `<div class="job-card" onclick="openJobModal('${j.id}')"><div class="jc-title">${escapeHtml(c?c.name:'—')}</div><div class="muted" style="font-size:11.5px;">${svcName(svc)}</div><div class="jc-meta">${ICONS.calendar}${fmtDateShort(j.date)} · ${j.time}</div><div class="jc-meta">${ICONS.user}${tm?escapeHtml(tm.name):t('unassigned')}</div></div>`;
+    }).join('')}</div>`;
+  }).join('')}</div>`;
+}
+function openJobModal(id){
+  const j = id? state.jobs.find(x=>x.id===id): null;
+  const clientOptions = state.clients.map(c=>`<option value="${c.id}" ${j?.clientId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  const teamOptions = state.team.map(tm=>`<option value="${tm.id}" ${j?.assignedTo===tm.id?'selected':''}>${escapeHtml(tm.name)}</option>`).join('');
+  openModal(`
+    <div class="modal-head"><h3>${j?t('edit_job'):t('new_job_modal')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid"><div class="form-row"><label>${t('th_client')}</label><select id="j-client">${clientOptions}</select></div><div class="form-row"><label>${t('th_service')}</label><select id="j-service">${serviceOptionsHtml(j?.service)}</select></div></div>
+      <div class="form-grid-3"><div class="form-row"><label>${t('lbl_date')}</label><input type="date" id="j-date" value="${j?j.date:todayISO(1)}"></div><div class="form-row"><label>${t('lbl_time')}</label><input type="time" id="j-time" value="${j?j.time:'09:00'}"></div><div class="form-row"><label>${t('lbl_duration')}</label><input type="number" step="0.5" min="0.5" id="j-duration" value="${j?j.duration:2}"></div></div>
+      <div class="form-grid"><div class="form-row"><label>${t('lbl_assigned')}</label><select id="j-team">${teamOptions}</select></div><div class="form-row"><label>${t('lbl_status')}</label><select id="j-status">${JOB_STATUSES.map(s=>`<option value="${s}" ${j?.status===s?'selected':''}>${statusLabel(s)}</option>`).join('')}</select></div></div>
+      <div class="form-row"><label>${t('lbl_recurrence')}</label><select id="j-recurring">${RECURRING_CODES.map(r=>`<option value="${r}" ${j?.recurring===r?'selected':''}>${recurringLabel(r)}</option>`).join('')}</select></div>
+      <div class="form-row"><label>${t('lbl_team_notes')}</label><textarea id="j-notes">${j?escapeHtml(j.notes||''):''}</textarea></div>
+    </div>
+    <div class="modal-foot">${j?`<button class="btn btn-danger" style="margin-right:auto;" onclick="deleteJob('${j.id}')">${ICONS.trash} ${t('delete')}</button>`:''}<button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button>${j&&j.status!=='completed'?`<button class="btn btn-sage" onclick="markJobComplete('${j.id}')">${ICONS.check} ${t('mark_completed')}</button>`:''}<button class="btn btn-gold" onclick="saveJob(${j?`'${j.id}'`:'null'})">${t('save_job')}</button></div>`);
+}
+async function saveJob(id){
+  const clientId=document.getElementById('j-client').value, service=document.getElementById('j-service').value, date=document.getElementById('j-date').value, time=document.getElementById('j-time').value;
+  const duration=parseFloat(document.getElementById('j-duration').value)||1, assignedTo=document.getElementById('j-team').value, status=document.getElementById('j-status').value, recurring=document.getElementById('j-recurring').value, notes=document.getElementById('j-notes').value.trim();
+  const client=getClient(clientId); const propertyId = client&&client.properties.length? client.properties[0].id: null;
+  const payload = { client_id:clientId, property_id:propertyId, service_id:service, job_date:date, job_time:time, duration, assigned_to:assignedTo||null, status, recurring, notes };
+  const { error } = id? await sb.from('jobs').update(payload).eq('id', id) : await sb.from('jobs').insert(payload);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); closeModal(); render();
+  toast(t('save_job'));
+}
+async function markJobComplete(id){ const { error } = await sb.from('jobs').update({status:'completed'}).eq('id', id); if(error){ toast(error.message,ICONS.info); return; } await loadStaffData(); closeModal(); render(); toast(t('mark_completed')); }
+async function deleteJob(id){ if(!confirm(t('confirm_delete_job'))) return; const { error } = await sb.from('jobs').delete().eq('id', id); if(error){ toast(error.message,ICONS.info); return; } await loadStaffData(); closeModal(); render(); toast(t('delete')); }
+
+/* ================================ CALENDAR ================================= */
+let calCursor = new Date();
+function renderCalendar(){
+  const year=calCursor.getFullYear(), month=calCursor.getMonth();
+  const firstDay=new Date(year,month,1); const startOffset=firstDay.getDay(); const daysInMonth=new Date(year,month+1,0).getDate();
+  const locale=LANG==='es'?'es-ES':'en-US'; const monthName=calCursor.toLocaleDateString(locale,{month:'long',year:'numeric'}); const today=todayISO(0);
+  const cells=[]; for(let i=0;i<startOffset;i++){ const d=new Date(year,month,1-(startOffset-i)); cells.push({date:d,other:true}); }
+  for(let d=1; d<=daysInMonth; d++) cells.push({date:new Date(year,month,d),other:false});
+  while(cells.length%7!==0){ const last=cells[cells.length-1].date; cells.push({date:new Date(last.getFullYear(),last.getMonth(),last.getDate()+1),other:true}); }
+  const dayNames = LANG==='es'? ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'] : ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  return `<div class="toolbar"><div style="display:flex;align-items:center;gap:12px;"><button class="btn-icon" onclick="calCursor.setMonth(calCursor.getMonth()-1); render();">${ICONS.arrow.replace('stroke-width="2.2"','style="transform:rotate(180deg)"')}</button><h3 style="min-width:180px;text-transform:capitalize;">${monthName}</h3><button class="btn-icon" onclick="calCursor.setMonth(calCursor.getMonth()+1); render();">${ICONS.arrow}</button><button class="btn btn-outline btn-sm" onclick="calCursor=new Date(); render();">${t('today_btn')}</button></div><button class="btn btn-gold" onclick="openJobModal()">+ ${t('new_job')}</button></div>
+  <div class="cal-grid" style="margin-bottom:8px;">${dayNames.map(d=>`<div class="cal-day-name">${d}</div>`).join('')}</div>
+  <div class="cal-grid">${cells.map(cell=>{ const iso=cell.date.toISOString().slice(0,10); const jobsForDay=state.jobs.filter(j=>j.date===iso).sort((a,b)=>a.time.localeCompare(b.time));
+    return `<div class="cal-cell ${cell.other?'other-month':''} ${iso===today?'today':''}"><div class="cal-date">${cell.date.getDate()}</div>${jobsForDay.slice(0,3).map(j=>{ const c=getClient(j.clientId); const sc=j.status==='completed'?'status-completed':(j.status==='in_progress'?'status-inprogress':'');
+      return `<div class="cal-job ${sc}" onclick="openJobModal('${j.id}')">${j.time} ${escapeHtml(c?c.name:'')}</div>`; }).join('')}${jobsForDay.length>3?`<div class="muted" style="font-size:10px;">+${jobsForDay.length-3} ${t('more_suffix')}</div>`:''}</div>`;
+  }).join('')}</div>`;
+}
+
+/* ================================ INVOICES ================================= */
+let invoiceFilter='all';
+function renderInvoices(){
+  let list = state.invoices.slice();
+  if(invoiceFilter!=='all') list = list.filter(i=>i.status===invoiceFilter);
+  list.sort((a,b)=>(b.issueDate||'').localeCompare(a.issueDate||''));
+  const totalOutstanding = state.invoices.reduce((s,i)=>s+(['sent','overdue','partial'].includes(i.status)?calcInvoiceTotal(i).balance:0),0);
+  return `<div class="grid grid-3" style="margin-bottom:18px;"><div class="card kpi"><span class="small-caps">${t('kpi_total_outstanding')}</span><div class="value">${fmtMoney(totalOutstanding)}</div></div><div class="card kpi"><span class="small-caps">${t('kpi_overdue_invoices')}</span><div class="value">${state.invoices.filter(i=>i.status==='overdue').length}</div></div><div class="card kpi"><span class="small-caps">${t('kpi_paid_invoices')}</span><div class="value">${state.invoices.filter(i=>i.status==='paid').length}</div></div></div>
+  <div class="toolbar"><div class="filters"><button class="chip ${invoiceFilter==='all'?'active':''}" onclick="invoiceFilter='all';render();">${t('filter_all')}</button>${INVOICE_STATUSES.map(s=>`<button class="chip ${invoiceFilter===s?'active':''}" onclick="invoiceFilter='${s}';render();">${statusLabel(s)}</button>`).join('')}</div><button class="btn btn-gold" onclick="openInvoiceModal()">+ ${t('new_invoice')}</button></div>
+  <div class="card" style="padding:0;"><div class="table-wrap"><table><thead><tr><th>${t('th_invoice_num')}</th><th>${t('th_client')}</th><th>${t('th_issued')}</th><th>${t('th_due')}</th><th>${t('th_total')}</th><th>${t('th_balance')}</th><th>${t('th_status')}</th></tr></thead><tbody>
+  ${list.length? list.map(inv=>{ const c=getClient(inv.clientId); const tt=calcInvoiceTotal(inv);
+    return `<tr onclick="navigate('invoices','${inv.id}')"><td class="row-name">#${inv.id.slice(0,6)}</td><td>${escapeHtml(c?c.name:'—')}</td><td>${fmtDateShort(inv.issueDate)}</td><td>${fmtDateShort(inv.dueDate)}</td><td>${fmtMoney(tt.total)}</td><td>${fmtMoney(tt.balance)}</td><td><span class="badge ${statusBadgeClass(inv.status)}"><span class="badge-dot"></span>${statusLabel(inv.status)}</span></td></tr>`;
+  }).join('') : `<tr><td colspan="7"><div class="empty">${ICONS.invoices}<h4>${t('no_invoices_title')}</h4></div></td></tr>`}</tbody></table></div></div>`;
+}
+function renderInvoiceDetail(id){
+  const inv = state.invoices.find(x=>x.id===id);
+  if(!inv) return `<div class="empty"><button class="link-btn" onclick="navigate('invoices')">${t('back')}</button></div>`;
+  const c = getClient(inv.clientId); const tt = calcInvoiceTotal(inv);
+  return `<button class="btn-icon" style="margin-bottom:16px;" onclick="navigate('invoices')">${ICONS.arrow.replace('stroke-width="2.2"','stroke-width="2.2" style="transform:rotate(180deg)"')}</button>
+  <div class="card no-print" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;">
+    <div><span class="badge ${statusBadgeClass(inv.status)}" style="font-size:12px;padding:6px 12px;"><span class="badge-dot"></span>${statusLabel(inv.status)}</span></div>
+    <div style="display:flex;gap:8px;"><button class="btn btn-outline btn-sm" onclick="window.print()">${t('print_pdf')}</button><button class="btn btn-outline btn-sm" onclick="openInvoiceModal('${inv.id}')">${ICONS.edit} ${t('edit')}</button>${inv.status!=='paid'?`<button class="btn btn-sage btn-sm" onclick="openRecordPaymentModal('${inv.id}')">${t('record_payment')}</button>`:''}${inv.status==='draft'?`<button class="btn btn-gold btn-sm" onclick="markInvoiceSent('${inv.id}')">${t('mark_sent')}</button>`:''}</div>
+  </div>
+  <div class="card" style="max-width:720px;margin:0 auto;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:26px;">
+      <div><svg width="52" height="52" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="47" stroke="#A5792A" stroke-width="2.5"/><text x="50" y="61" text-anchor="middle" font-family="Playfair Display, serif" font-size="34" fill="#3A332C">DC</text></svg><h2 style="margin-top:10px;font-size:19px;">${state.business.name}</h2><div class="muted" style="font-size:12.5px;">${state.business.address}<br>${state.business.phone} · ${state.business.email}</div></div>
+      <div style="text-align:right;"><div class="small-caps">${t('nav_invoices')}</div><div style="font-family:'Playfair Display',serif;font-size:22px;">#${inv.id.slice(0,6)}</div><div class="muted" style="font-size:12.5px;margin-top:6px;">${t('th_issued')}: ${fmtDate(inv.issueDate)}<br>${t('lbl_due_date')}: ${fmtDate(inv.dueDate)}</div></div>
+    </div>
+    <div style="margin-bottom:20px;"><div class="small-caps">${t('bill_to')}</div><div style="font-weight:500;margin-top:4px;">${escapeHtml(c?c.name:'—')}</div><div class="muted" style="font-size:12.5px;">${c?escapeHtml(c.email||''):''} · ${c?escapeHtml(c.phone||''):''}</div></div>
+    <div class="table-wrap"><table><thead><tr><th>${t('th_desc')}</th><th>${t('th_qty')||'Qty'}</th><th>${t('th_price')||'Price'}</th><th style="text-align:right;">${t('th_amount')}</th></tr></thead><tbody>${inv.items.map(it=>`<tr><td>${escapeHtml(it.desc)}</td><td>${it.qty}</td><td>${fmtMoney(it.rate)}</td><td style="text-align:right;">${fmtMoney(it.qty*it.rate)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="totals-box" style="max-width:280px;margin-left:auto;"><div class="totals-row"><span>${t('totals_subtotal')}</span><span>${fmtMoney(tt.sub)}</span></div><div class="totals-row"><span>${t('totals_tax')}</span><span>${fmtMoney(tt.tax)}</span></div><div class="totals-row"><span>${t('totals_paid')}</span><span>${fmtMoney(inv.amountPaid)}</span></div><div class="totals-row grand"><span>${t('totals_balance')}</span><span>${fmtMoney(tt.balance)}</span></div></div>
+    ${inv.paymentMethod?`<div class="muted" style="margin-top:16px;font-size:12.5px;">${t('payment_method_lbl')}: ${paymentMethodLabel(inv.paymentMethod)}</div>`:''}
+  </div>`;
+}
+function openInvoiceModal(id){
+  const inv = id? state.invoices.find(x=>x.id===id): null;
+  const clientOptions = state.clients.map(c=>`<option value="${c.id}" ${inv?.clientId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('');
+  const items = inv? inv.items: [{desc:'',qty:1,rate:0}]; const tt = inv? calcInvoiceTotal(inv): {sub:0,tax:0,total:0};
+  openModal(`<div class="modal-head"><h3>${inv?t('edit_invoice'):t('new_invoice_modal')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid"><div class="form-row"><label>${t('th_client')}</label><select id="i-client">${clientOptions}</select></div><div class="form-row"><label>${t('lbl_status')}</label><select id="i-status">${INVOICE_STATUSES.map(s=>`<option value="${s}" ${inv?.status===s?'selected':''}>${statusLabel(s)}</option>`).join('')}</select></div></div>
+    <div class="form-grid"><div class="form-row"><label>${t('lbl_issue_date')}</label><input type="date" id="i-issue" value="${inv?inv.issueDate:todayISO(0)}"></div><div class="form-row"><label>${t('lbl_due_date')}</label><input type="date" id="i-due" value="${inv?inv.dueDate:todayISO(14)}"></div></div>
+    <div class="form-row"><label>${t('lbl_line_items')}</label><div class="line-items" id="i-items">${items.map(it=>lineItemRowHtml(it)).join('')}</div><button class="btn btn-outline btn-sm" onclick="addLineItem('i-items')">+ ${t('add_line_item')}</button></div>
+    <div class="totals-box" id="i-totals">${totalsBoxHtml(tt)}</div>
+  </div>
+  <div class="modal-foot">${inv?`<button class="btn btn-danger" style="margin-right:auto;" onclick="deleteInvoice('${inv.id}')">${ICONS.trash} ${t('delete')}</button>`:''}<button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="saveInvoice(${inv?`'${inv.id}'`:'null'})">${t('save_invoice')}</button></div>`);
+  attachLineItemListeners('i-items','i-totals');
+}
+async function saveInvoice(id){
+  const clientId=document.getElementById('i-client').value, status=document.getElementById('i-status').value, issueDate=document.getElementById('i-issue').value, dueDate=document.getElementById('i-due').value;
+  const items=readLineItems('i-items');
+  if(!items.length){ toast(t('err_generic'), ICONS.info); return; }
+  let invId = id;
+  const payload = { client_id:clientId, status, issue_date:issueDate, due_date:dueDate, tax_rate: state.business.taxRate };
+  if(id){ const { error } = await sb.from('invoices').update(payload).eq('id', id); if(error){ toast(error.message,ICONS.info); return; } }
+  else { const { data, error } = await sb.from('invoices').insert(payload).select().single(); if(error){ toast(error.message,ICONS.info); return; } invId = data.id; }
+  await sb.from('invoice_items').delete().eq('invoice_id', invId);
+  await sb.from('invoice_items').insert(items.map(it=>({invoice_id:invId, description:it.desc, qty:it.qty, rate:it.rate})));
+  await loadStaffData(); closeModal(); render();
+  toast(t('save_invoice'));
+}
+async function deleteInvoice(id){ if(!confirm(t('confirm_delete_invoice'))) return; const { error } = await sb.from('invoices').delete().eq('id', id); if(error){ toast(error.message,ICONS.info); return; } await loadStaffData(); closeModal(); navigate('invoices'); toast(t('delete')); }
+async function markInvoiceSent(id){ const { error } = await sb.from('invoices').update({status:'sent'}).eq('id', id); if(error){ toast(error.message,ICONS.info); return; } await loadStaffData(); render(); toast(t('mark_sent')); }
+function openRecordPaymentModal(id){
+  const inv = state.invoices.find(x=>x.id===id); const tt = calcInvoiceTotal(inv);
+  openModal(`<div class="modal-head"><h3>${t('record_payment_title')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body"><div class="form-row"><label>${t('lbl_balance_due')}</label><div style="font-family:'Playfair Display',serif;font-size:22px;">${fmtMoney(tt.balance)}</div></div>
+  <div class="form-row"><label>${t('lbl_amount')}</label><input type="number" step="0.01" id="p-amount" value="${tt.balance.toFixed(2)}"></div>
+  <div class="form-row"><label>${t('payment_method_lbl')}</label><select id="p-method">${PAYMENT_METHODS.map(m=>`<option value="${m}">${paymentMethodLabel(m)}</option>`).join('')}</select></div></div>
+  <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="recordPayment('${id}')">${t('record_payment')}</button></div>`);
+}
+async function recordPayment(id){
+  const inv = state.invoices.find(x=>x.id===id);
+  const amount = parseFloat(document.getElementById('p-amount').value)||0;
+  const method = document.getElementById('p-method').value;
+  const newPaid = (Number(inv.amountPaid)||0) + amount;
+  const tempTotal = calcInvoiceTotal({...inv, amountPaid:newPaid});
+  const newStatus = tempTotal.balance <= 0.005 ? 'paid' : 'partial';
+  const { error } = await sb.from('invoices').update({amount_paid:newPaid, payment_method:method, status:newStatus}).eq('id', id);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); closeModal(); render();
+  toast(t('record_payment') + ' — ' + fmtMoney(amount));
+}
+
+/* ================================= REPORTS ================================= */
+function renderReports(){
+  const totalRevenue = state.invoices.reduce((s,i)=>s+(Number(i.amountPaid)||0),0);
+  const totalBilled = state.invoices.reduce((s,i)=>s+calcInvoiceTotal(i).total,0);
+  const byService={}; state.jobs.forEach(j=>{ const svc=getService(j.service); const key=svc?svcName(svc):'Other'; byService[key]=(byService[key]||0)+1; });
+  const maxCount = Math.max(1,...Object.values(byService));
+  const byStatus = JOB_STATUSES.map(s=>({status:s,count:state.jobs.filter(j=>j.status===s).length}));
+  const maxStatus = Math.max(1,...byStatus.map(s=>s.count));
+  return `<div class="grid grid-3" style="margin-bottom:18px;"><div class="card kpi"><span class="small-caps">${t('kpi_total_billed')}</span><div class="value">${fmtMoney(totalBilled)}</div></div><div class="card kpi"><span class="small-caps">${t('kpi_total_collected')}</span><div class="value">${fmtMoney(totalRevenue)}</div></div><div class="card kpi"><span class="small-caps">${t('kpi_total_jobs')}</span><div class="value">${state.jobs.length}</div></div></div>
+  <div class="grid grid-2"><div class="card"><div class="card-head"><h3>${t('jobs_by_service')}</h3></div>${Object.entries(byService).map(([name,count])=>`<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;"><span>${name}</span><span class="muted">${count}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(count/maxCount*100).toFixed(0)}%;"></div></div></div>`).join('')}</div>
+  <div class="card"><div class="card-head"><h3>${t('jobs_by_status')}</h3></div>${byStatus.map(s=>`<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;"><span>${statusLabel(s.status)}</span><span class="muted">${s.count}</span></div><div class="progress-track"><div class="progress-fill" style="width:${(s.count/maxStatus*100).toFixed(0)}%;background:var(--gold);"></div></div></div>`).join('')}</div></div>`;
+}
+
+/* ================================ SETTINGS ================================= */
+function renderSettings(){
+  const b = state.business;
+  return `<div class="grid grid-2">
+    <div class="card"><div class="card-head"><h3>${t('business_info')}</h3></div>
+      <div class="form-row"><label>${t('lbl_business_name')}</label><input id="s-name" value="${escapeHtml(b.name||'')}"></div>
+      <div class="form-row"><label>${t('lbl_tagline')}</label><input id="s-tagline" value="${escapeHtml(b.tagline||'')}"></div>
+      <div class="form-grid"><div class="form-row"><label>${t('lbl_phone')}</label><input id="s-phone" value="${escapeHtml(b.phone||'')}"></div><div class="form-row"><label>${t('lbl_email')}</label><input id="s-email" value="${escapeHtml(b.email||'')}"></div></div>
+      <div class="form-grid"><div class="form-row"><label>${t('lbl_website')}</label><input id="s-website" value="${escapeHtml(b.website||'')}"></div><div class="form-row"><label>${t('lbl_tax_rate')}</label><input type="number" step="0.1" id="s-tax" value="${b.taxRate}"></div></div>
+      <div class="form-row"><label>${t('lbl_address')}</label><input id="s-address" value="${escapeHtml(b.address||'')}"></div>
+      <button class="btn btn-gold" onclick="saveBusiness()">${t('save_changes')}</button>
+    </div>
+    <div class="card"><div class="card-head"><h3>${t('settings_team')}</h3><button class="btn btn-outline btn-sm" onclick="openTeamModal()">+ ${t('add_member')}</button></div>
+      ${state.team.map(tm=>`<div class="info-line" style="justify-content:space-between;"><span style="display:flex;align-items:center;gap:10px;"><span class="avatar-circle" style="width:34px;height:34px;font-size:13px;background:${tm.color}22;color:${tm.color};">${initials(tm.name)}</span><span><b>${escapeHtml(tm.name)}</b><br><span class="muted" style="font-size:11.5px;">${escapeHtml(tm.role||'')} · ${escapeHtml(tm.phone||'')}</span></span></span><span style="display:flex;gap:4px;"><button class="btn-icon" onclick="openTeamModal('${tm.id}')">${ICONS.edit}</button><button class="btn-icon" onclick="deleteTeamMember('${tm.id}')">${ICONS.trash}</button></span></div>`).join('')}
+    </div></div>
+  <div class="card" style="margin-top:18px;"><div class="card-head"><h3>${t('service_catalog')}</h3></div>
+    ${Object.values(SERVICE_META).map(s=>`<div class="service-swatch"><div><div style="font-weight:500;font-size:13.5px;">${svcName(s)}</div><div class="cat">${categoryLabel(s.category)} · ${svcDesc(s)}</div></div><div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="font-size:12px;">$</span><input type="number" step="1" value="${s.rate}" style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;" onchange="updateServiceRate('${s.id}', this.value)"><span class="muted" style="font-size:11.5px;">/ ${unitLabel(s.unit)}</span></div></div>`).join('')}
+  </div>`;
+}
+async function saveBusiness(){
+  const payload = { name:document.getElementById('s-name').value, tagline:document.getElementById('s-tagline').value, phone:document.getElementById('s-phone').value, email:document.getElementById('s-email').value, website:document.getElementById('s-website').value, tax_rate: parseFloat(document.getElementById('s-tax').value)||0, address:document.getElementById('s-address').value };
+  const { error } = await sb.from('business_settings').update(payload).eq('id',1);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); render();
+  toast(t('save_changes'));
+}
+async function updateServiceRate(id, val){
+  const rate = parseFloat(val)||0;
+  const { error } = await sb.from('services').update({rate}).eq('id', id);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadServiceMeta(); render();
+  toast(t('save_changes'));
+}
+function openTeamModal(id){
+  const tm = id? getTeamMember(id): null;
+  openModal(`<div class="modal-head"><h3>${tm?t('edit_member'):t('new_member')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body"><div class="form-row"><label>${t('lbl_name')}</label><input id="tm-name" value="${tm?escapeHtml(tm.name):''}"></div>
+  <div class="form-grid"><div class="form-row"><label>${t('lbl_role')}</label><input id="tm-role" value="${tm?escapeHtml(tm.role||''):''}" placeholder="${t('ph_role')}"></div><div class="form-row"><label>${t('lbl_phone')}</label><input id="tm-phone" value="${tm?escapeHtml(tm.phone||''):''}"></div></div></div>
+  <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="saveTeamMember(${tm?`'${tm.id}'`:'null'})">${t('save')}</button></div>`);
+}
+async function saveTeamMember(id){
+  const name=document.getElementById('tm-name').value.trim(), role=document.getElementById('tm-role').value.trim(), phone=document.getElementById('tm-phone').value.trim();
+  if(!name){ toast(t('err_generic'), ICONS.info); return; }
+  const colors=['#A5792A','#7C8B70','#4A6A8A','#AE4A34','#8A6FA3'];
+  const payload = { name, role, phone };
+  if(id){ const { error } = await sb.from('team_members').update(payload).eq('id', id); if(error){ toast(error.message,ICONS.info); return; } }
+  else { payload.color = colors[state.team.length % colors.length]; const { error } = await sb.from('team_members').insert(payload); if(error){ toast(error.message,ICONS.info); return; } }
+  await loadStaffData(); closeModal(); render();
+  toast(t('save'));
+}
+async function deleteTeamMember(id){ if(!confirm(t('confirm_remove_member'))) return; const { error } = await sb.from('team_members').delete().eq('id', id); if(error){ toast(error.message,ICONS.info); return; } await loadStaffData(); render(); toast(t('delete')); }
+
+/* ================================= MODALS =================================== */
+function openModal(html){ document.getElementById('modal-root').innerHTML = `<div class="modal-overlay" onclick="if(event.target===this) closeModal()"><div class="modal">${html}</div></div>`; }
+function closeModal(){ document.getElementById('modal-root').innerHTML = ''; }
+function openQuickAddMenu(e){
+  e.stopPropagation();
+  openModal(`<div class="modal-head"><h3>${t('create_new')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body" style="display:grid;gap:10px;">
+    <button class="btn btn-outline" style="justify-content:flex-start;" onclick="closeModal();openClientModal();">${ICONS.clients} ${t('qa_client')}</button>
+    <button class="btn btn-outline" style="justify-content:flex-start;" onclick="closeModal();openQuoteModal();">${ICONS.quotes} ${t('qa_quote')}</button>
+    <button class="btn btn-outline" style="justify-content:flex-start;" onclick="closeModal();openJobModal();">${ICONS.jobs} ${t('qa_job')}</button>
+    <button class="btn btn-outline" style="justify-content:flex-start;" onclick="closeModal();openInvoiceModal();">${ICONS.invoices} ${t('qa_invoice')}</button>
+  </div>`);
+}
+
+/* ============================ CLIENT PORTAL ============================ */
+async function loadClientPortalData(clientId){
+  if(!clientId){ clientPortalData = { client:null, properties:[], jobs:[], quotes:[], invoices:[] }; return; }
+  const [clientRes, propsRes, jobsRes, quotesRes, invRes] = await Promise.all([
+    sb.from('clients').select('*').eq('id', clientId).single(),
+    sb.from('properties').select('*').eq('client_id', clientId),
+    sb.from('jobs').select('*').eq('client_id', clientId),
+    sb.from('quotes').select('*, quote_items(*)').eq('client_id', clientId),
+    sb.from('invoices').select('*, invoice_items(*)').eq('client_id', clientId)
+  ]);
+  clientPortalData = {
+    client: clientRes.data,
+    properties: propsRes.data || [],
+    jobs: (jobsRes.data||[]).map(j=>({ id:j.id, service:j.service_id, status:j.status, date:j.job_date, time:(j.job_time||'').slice(0,5) })),
+    quotes: (quotesRes.data||[]).map(q=>({ id:q.id, service:q.service_id, status:q.status, taxRate:Number(q.tax_rate)||0, items:(q.quote_items||[]).map(it=>({desc:it.description, qty:Number(it.qty), rate:Number(it.rate)})) })),
+    invoices: (invRes.data||[]).map(inv=>({ id:inv.id, status:inv.status, issueDate:inv.issue_date, dueDate:inv.due_date, taxRate:Number(inv.tax_rate)||0, amountPaid:Number(inv.amount_paid)||0, items:(inv.invoice_items||[]).map(it=>({desc:it.description, qty:Number(it.qty), rate:Number(it.rate)})) }))
+  };
+}
+function renderClientPortal(){
+  const d = clientPortalData;
+  const el = document.getElementById('client-portal');
+  const topbar = `<div class="cp-topbar">
+      <div style="display:flex;align-items:center;gap:12px;"><svg width="36" height="36" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="47" stroke="#C9A227" stroke-width="2.5"/><text x="50" y="61" text-anchor="middle" font-family="Playfair Display, serif" font-size="34" fill="#F4E9D2">DC</text></svg><b>Dream Clean by DC</b></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="lang-btn ${LANG==='en'?'active':''}" onclick="setLang('en')">EN</button><button class="lang-btn ${LANG==='es'?'active':''}" onclick="setLang('es')">ES</button>
+        <button class="btn btn-outline btn-sm" onclick="doSignOut()">${t('sign_out')}</button>
+      </div>
+    </div>`;
+  if(!d || !d.client){
+    el.innerHTML = topbar + `<div class="cp-body"><div class="empty">${ICONS.info}<h4>${t('cp_not_linked')}</h4></div></div>`;
+    return;
+  }
+  const today = todayISO(0);
+  const upcoming = d.jobs.filter(j=>j.date>=today && j.status!=='completed').sort((a,b)=>a.date.localeCompare(b.date));
+  const past = d.jobs.filter(j=>j.status==='completed').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+  const pendingQuotes = d.quotes.filter(q=>q.status==='sent');
+  el.innerHTML = topbar + `
+    <div class="cp-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:10px;">
+        <h2 style="font-size:24px;">${t('cp_greeting')}, ${escapeHtml(d.client.name)}</h2>
+        <button class="btn btn-gold btn-sm" onclick="openRequestQuoteModal()">+ ${t('cp_request_quote')}</button>
+      </div>
+      <div class="grid grid-2" style="margin-top:20px;">
+        <div class="card"><div class="card-head"><h3>${t('cp_properties')}</h3></div>
+          ${d.properties.length? d.properties.map(p=>`<div class="info-line">${ICONS.pin}<b>${escapeHtml(p.label||'')}:</b>&nbsp;${escapeHtml(p.address||'')}</div>`).join(''):`<div class="muted" style="font-size:12.5px;">—</div>`}
+        </div>
+        <div class="card"><div class="card-head"><h3>${t('cp_upcoming')}</h3></div>
+          ${upcoming.length? upcoming.map(j=>{ const svc=getService(j.service);
+            return `<div class="job-card"><div class="jc-title">${svcName(svc)}</div><div class="jc-meta">${ICONS.calendar}${fmtDateShort(j.date)} · ${j.time}</div></div>`;
+          }).join('') : `<div class="muted" style="font-size:12.5px;">${t('cp_no_upcoming')}</div>`}
+        </div>
+      </div>
+      <div class="card" style="margin-top:18px;"><div class="card-head"><h3>${t('cp_quotes')}</h3></div>
+        ${pendingQuotes.length? pendingQuotes.map(q=>{ const svc=getService(q.service); const tt=calcQuoteTotal(q);
+          return `<div class="job-card"><div class="jc-title">${svcName(svc)} — ${fmtMoney(tt.total)}</div>
+            <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-sage btn-sm" onclick="clientRespondQuote('${q.id}','approved')">${t('cp_approve')}</button><button class="btn btn-outline btn-sm" onclick="clientRespondQuote('${q.id}','declined')">${t('cp_decline')}</button></div>
+          </div>`;
+        }).join('') : `<div class="muted" style="font-size:12.5px;">${t('cp_no_quotes')}</div>`}
+      </div>
+      <div class="card" style="margin-top:18px;"><div class="card-head"><h3>${t('cp_invoices')}</h3></div>
+        ${d.invoices.length? `<div class="table-wrap"><table><thead><tr><th>#</th><th>${t('th_due')}</th><th>${t('th_balance')}</th><th>${t('th_status')}</th><th></th></tr></thead><tbody>
+        ${d.invoices.map(inv=>{ const tt=calcInvoiceTotal(inv);
+          return `<tr><td>#${inv.id.slice(0,6)}</td><td>${fmtDateShort(inv.dueDate)}</td><td>${fmtMoney(tt.balance)}</td><td><span class="badge ${statusBadgeClass(inv.status)}">${statusLabel(inv.status)}</span></td><td>${inv.status!=='paid'?`<button class="btn btn-gold btn-sm" onclick="payInvoiceNow('${inv.id}')">${t('cp_pay_now')}</button>`:''}</td></tr>`;
+        }).join('')}</tbody></table></div>` : `<div class="muted" style="font-size:12.5px;">${t('cp_no_invoices')}</div>`}
+      </div>
+      <div class="card" style="margin-top:18px;"><div class="card-head"><h3>${t('cp_past_services')}</h3></div>
+        ${past.length? past.map(j=>{ const svc=getService(j.service);
+          return `<div class="job-card" style="cursor:default;"><div class="jc-title">${svcName(svc)}</div><div class="jc-meta">${ICONS.calendar}${fmtDateShort(j.date)}</div></div>`;
+        }).join('') : `<div class="muted" style="font-size:12.5px;">${t('cp_no_past')}</div>`}
+      </div>
+    </div>`;
+}
+async function clientRespondQuote(quoteId, decision){
+  const { error } = await sb.rpc('client_respond_to_quote', { p_quote_id: quoteId, p_decision: decision });
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadClientPortalData(myProfile.client_id);
+  renderClientPortal();
+  toast(t('cp_quote_updated'));
+}
+function openRequestQuoteModal(){
+  openModal(`<div class="modal-head"><h3>${t('cp_request_quote_title')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-row"><label>${t('cp_request_service')}</label><select id="rq-service">${serviceOptionsHtml()}</select></div>
+    <div class="form-row"><label>${t('cp_request_notes')}</label><textarea id="rq-notes"></textarea></div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="submitQuoteRequest()">${t('cp_request_submit')}</button></div>`);
+}
+async function submitQuoteRequest(){
+  const serviceId = document.getElementById('rq-service').value;
+  const notes = document.getElementById('rq-notes').value.trim();
+  const { error } = await sb.rpc('client_request_quote', { p_service_id: serviceId, p_notes: notes });
+  if(error){ toast(error.message, ICONS.info); return; }
+  closeModal();
+  await loadClientPortalData(myProfile.client_id);
+  renderClientPortal();
+  toast(t('cp_request_sent'));
+}
+async function payInvoiceNow(invoiceId){
+  toast(t('cp_redirecting'), ICONS.info);
+  try{
+    const res = await fetch('/api/create-checkout-session', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ invoiceId }) });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || !data.url){ toast(data.error || t('cp_pay_error'), ICONS.info); return; }
+    window.location.href = data.url;
+  }catch(e){ toast(t('cp_pay_error'), ICONS.info); }
+}
+function checkPaymentReturn(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.has('paid')){ toast(t('cp_payment_success')); }
+  else if(params.has('canceled')){ toast(t('cp_payment_canceled'), ICONS.info); }
+  if(params.has('paid') || params.has('canceled')){ window.history.replaceState({}, '', window.location.pathname); }
+}
+
+/* ==================================== BOOT ==================================== */
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
+(async function boot(){
+  renderAuthScreen('signin');
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){ await afterLogin(); }
+  sb.auth.onAuthStateChange((event)=>{ if(event==='SIGNED_OUT'){ renderAuthScreen('signin'); } });
+})();
+</script>
+</body>
+</html>
