@@ -185,7 +185,10 @@ const ICONS = {
   user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.3"/><path d="M4.5 20c0-4 3.5-7 7.5-7s7.5 3 7.5 7"/></svg>',
   info:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><circle cx="12" cy="7.8" r="0.6" fill="currentColor"/></svg>',
   arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
-  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+  x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 16.5h6"/></svg>',
+  pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4"/><path d="m6 9 6-6 6 6"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>'
 };
 
 let LANG = localStorage.getItem('dreamclean_lang') || 'en';
@@ -201,6 +204,21 @@ const T = {
   invoices_sub:{en:'Invoices, payments, and accounts receivable',es:'Facturas, pagos y cuentas por cobrar'},
   reports_sub:{en:'Business performance',es:'Desempeño del negocio'},
   settings_sub:{en:'Business, team, and service rates',es:'Negocio, equipo y tarifas de servicio'},
+  nav_documents:{en:'Documents',es:'Documentos'}, documents_sub:{en:'Agreements, policies, and e-signatures',es:'Acuerdos, políticas y firmas electrónicas'},
+  upload_document:{en:'Upload document',es:'Subir documento'}, lbl_doc_title:{en:'Document title',es:'Título del documento'},
+  lbl_doc_type:{en:'Type',es:'Tipo'}, lbl_doc_target:{en:'Applies to',es:'Aplica a'}, target_global:{en:'Everyone (all clients)',es:'Todos (todos los clientes)'},
+  lbl_doc_file:{en:'PDF file',es:'Archivo PDF'}, doc_type_agreement:{en:'Service agreement',es:'Acuerdo de servicio'},
+  doc_type_policy:{en:'Company policy',es:'Política de empresa'}, doc_type_quote:{en:'Quote',es:'Cotización'}, doc_type_other:{en:'Other',es:'Otro'},
+  th_document:{en:'Document',es:'Documento'}, th_target:{en:'Applies to',es:'Aplica a'}, th_signed_count:{en:'Signed',es:'Firmado'},
+  view_file:{en:'View PDF',es:'Ver PDF'}, delete_document:{en:'Delete',es:'Eliminar'}, confirm_delete_document:{en:'Delete this document? Signatures on it will also be deleted.',es:'¿Eliminar este documento? También se borrarán las firmas asociadas.'},
+  no_documents:{en:'No documents uploaded yet.',es:'Aún no hay documentos subidos.'}, uploading:{en:'Uploading…',es:'Subiendo…'},
+  cp_documents_title:{en:'Documents',es:'Documentos'}, cp_documents_pending:{en:'Waiting for your signature',es:'Esperando tu firma'},
+  cp_documents_signed:{en:'Signed documents',es:'Documentos firmados'}, cp_no_documents_pending:{en:'Nothing to sign right now.',es:'No hay nada que firmar por ahora.'},
+  cp_no_documents_signed:{en:'No signed documents yet.',es:'Aún no has firmado documentos.'}, cp_review_sign:{en:'Review & sign',es:'Revisar y firmar'},
+  cp_sign_modal_title:{en:'Sign document',es:'Firmar documento'}, cp_sign_agree_checkbox:{en:'I have read and agree to this document.',es:'He leído y acepto este documento.'},
+  lbl_full_name_sign:{en:'Type your full legal name',es:'Escribe tu nombre completo'}, cp_sign_button:{en:'Sign',es:'Firmar'},
+  cp_signed_on:{en:'Signed on',es:'Firmado el'}, cp_doc_signed_toast:{en:'Document signed. Thank you!',es:'Documento firmado. ¡Gracias!'},
+  view_document_btn:{en:'View document',es:'Ver documento'}, signed_by:{en:'Signed by',es:'Firmado por'},
   sidebar_footer:{en:'Team dashboard',es:'Panel del equipo'},
   sign_out:{en:'Sign out',es:'Cerrar sesión'}, btn_new:{en:'New',es:'Nuevo'},
   helper_note:{en:'Connected to your live Supabase database. Changes here are real.',es:'Conectado a tu base de datos real en Supabase. Los cambios aquí son reales.'},
@@ -432,7 +450,7 @@ async function loadServiceMeta(){
 
 /* ============================ STAFF DATA LAYER ============================ */
 async function loadStaffData(){
-  const [clientsRes, propsRes, teamRes, quotesRes, jobsRes, invRes, bizRes, profilesRes] = await Promise.all([
+  const [clientsRes, propsRes, teamRes, quotesRes, jobsRes, invRes, bizRes, profilesRes, docsRes, sigsRes] = await Promise.all([
     sb.from('clients').select('*').order('name'),
     sb.from('properties').select('*'),
     sb.from('team_members').select('*'),
@@ -440,7 +458,9 @@ async function loadStaffData(){
     sb.from('jobs').select('*'),
     sb.from('invoices').select('*, invoice_items(*)').order('issue_date', {ascending:false}),
     sb.from('business_settings').select('*').eq('id',1).single(),
-    sb.from('profiles').select('id, client_id, role').eq('role','client')
+    sb.from('profiles').select('id, client_id, role').eq('role','client'),
+    sb.from('documents').select('*').order('created_at', {ascending:false}),
+    sb.from('document_signatures').select('*')
   ]);
   const props = propsRes.data || [];
   state = {
@@ -466,7 +486,9 @@ async function loadStaffData(){
     business: bizRes.data ? {
       name:bizRes.data.name, tagline:bizRes.data.tagline, phone:bizRes.data.phone, email:bizRes.data.email,
       website:bizRes.data.website, address:bizRes.data.address, taxRate:Number(bizRes.data.tax_rate)||0
-    } : { name:'Dream Clean by DC', taxRate:0 }
+    } : { name:'Dream Clean by DC', taxRate:0 },
+    documents: (docsRes.data||[]).map(d=>({ id:d.id, clientId:d.client_id, title:d.title, docType:d.doc_type, filePath:d.file_path, createdAt:d.created_at })),
+    documentSignatures: (sigsRes.data||[]).map(s=>({ id:s.id, documentId:s.document_id, clientId:s.client_id, signedName:s.signed_name, signedAt:s.signed_at }))
   };
 }
 function serviceOptionsHtml(selected){
@@ -475,8 +497,8 @@ function serviceOptionsHtml(selected){
 function clientPortalLinked(clientId){ return !!(state.linkedClientIds && state.linkedClientIds.has(clientId)); }
 
 /* ================================= ROUTER / NAV ================================= */
-const NAV_ITEMS=[{route:'dashboard',key:'nav_dashboard',icon:'dashboard'},{route:'clients',key:'nav_clients',icon:'clients'},{route:'quotes',key:'nav_quotes',icon:'quotes'},{route:'jobs',key:'nav_jobs',icon:'jobs'},{route:'calendar',key:'nav_calendar',icon:'calendar'},{route:'invoices',key:'nav_invoices',icon:'invoices'},{route:'reports',key:'nav_reports',icon:'reports'},{route:'settings',key:'nav_settings',icon:'settings'}];
-const PAGE_TITLE_KEYS={dashboard:['nav_dashboard','dashboard_sub'],clients:['nav_clients','clients_sub'],quotes:['nav_quotes','quotes_sub'],jobs:['nav_jobs','jobs_sub'],calendar:['nav_calendar','calendar_sub'],invoices:['nav_invoices','invoices_sub'],reports:['nav_reports','reports_sub'],settings:['nav_settings','settings_sub']};
+const NAV_ITEMS=[{route:'dashboard',key:'nav_dashboard',icon:'dashboard'},{route:'clients',key:'nav_clients',icon:'clients'},{route:'quotes',key:'nav_quotes',icon:'quotes'},{route:'jobs',key:'nav_jobs',icon:'jobs'},{route:'calendar',key:'nav_calendar',icon:'calendar'},{route:'invoices',key:'nav_invoices',icon:'invoices'},{route:'documents',key:'nav_documents',icon:'doc'},{route:'reports',key:'nav_reports',icon:'reports'},{route:'settings',key:'nav_settings',icon:'settings'}];
+const PAGE_TITLE_KEYS={dashboard:['nav_dashboard','dashboard_sub'],clients:['nav_clients','clients_sub'],quotes:['nav_quotes','quotes_sub'],jobs:['nav_jobs','jobs_sub'],calendar:['nav_calendar','calendar_sub'],invoices:['nav_invoices','invoices_sub'],documents:['nav_documents','documents_sub'],reports:['nav_reports','reports_sub'],settings:['nav_settings','settings_sub']};
 function navigate(r,sub){ route=r; subRoute=sub||null; render(); window.scrollTo(0,0); }
 function renderNav(){
   document.getElementById('nav-list').innerHTML = NAV_ITEMS.map(item=>`<li><a href="#" class="${route===item.route?'active':''}" onclick="navigate('${item.route}');return false;">${ICONS[item.icon]}<span>${t(item.key)}</span></a></li>`).join('');
@@ -497,6 +519,7 @@ function render(){
   else if(route==='jobs') view.innerHTML = renderJobs();
   else if(route==='calendar') view.innerHTML = renderCalendar();
   else if(route==='invoices') view.innerHTML = subRoute? renderInvoiceDetail(subRoute): renderInvoices();
+  else if(route==='documents') view.innerHTML = renderDocuments();
   else if(route==='reports') view.innerHTML = renderReports();
   else if(route==='settings') view.innerHTML = renderSettings();
 }
@@ -837,6 +860,68 @@ async function recordPayment(id){
   toast(t('record_payment') + ' — ' + fmtMoney(amount));
 }
 
+/* ================================ DOCUMENTS ================================= */
+function docTypeLabel(dt){ const m={service_agreement:'doc_type_agreement',policy:'doc_type_policy',quote:'doc_type_quote',other:'doc_type_other'}; return t(m[dt]||'doc_type_other'); }
+function docTargetLabel(clientId){ if(!clientId) return t('target_global'); const c=getClient(clientId); return c? c.name: '—'; }
+function docSignedCount(docId, clientId){
+  const sigs = state.documentSignatures.filter(s=>s.documentId===docId);
+  if(clientId) return sigs.some(s=>s.clientId===clientId) ? '1/1' : '0/1';
+  const total = state.clients.length;
+  return `${sigs.length}/${total}`;
+}
+function renderDocuments(){
+  const docs = state.documents.slice();
+  return `<div class="toolbar"><div></div><button class="btn btn-gold" onclick="openUploadDocumentModal()">${ICONS.upload} ${t('upload_document')}</button></div>
+  <div class="card" style="padding:0;"><div class="table-wrap"><table><thead><tr><th>${t('th_document')}</th><th>${t('lbl_doc_type')}</th><th>${t('th_target')}</th><th>${t('th_signed_count')}</th><th></th></tr></thead><tbody>
+  ${docs.length? docs.map(d=>`<tr><td class="row-name">${escapeHtml(d.title)}</td><td>${docTypeLabel(d.docType)}</td><td>${escapeHtml(docTargetLabel(d.clientId))}</td><td>${docSignedCount(d.id, d.clientId)}</td><td onclick="event.stopPropagation()" style="display:flex;gap:6px;"><button class="btn btn-outline btn-sm" onclick="viewDocumentFile('${d.filePath}')">${t('view_file')}</button><button class="btn-icon" onclick="deleteDocument('${d.id}')">${ICONS.trash}</button></td></tr>`).join('')
+  : `<tr><td colspan="5"><div class="empty">${ICONS.doc}<h4>${t('no_documents')}</h4></div></td></tr>`}
+  </tbody></table></div></div>`;
+}
+function openUploadDocumentModal(){
+  const clientOptions = `<option value="">${t('target_global')}</option>` + state.clients.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  openModal(`<div class="modal-head"><h3>${t('upload_document')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-row"><label>${t('lbl_doc_title')}</label><input id="d-title"></div>
+    <div class="form-grid"><div class="form-row"><label>${t('lbl_doc_type')}</label><select id="d-type"><option value="service_agreement">${t('doc_type_agreement')}</option><option value="policy">${t('doc_type_policy')}</option><option value="quote">${t('doc_type_quote')}</option><option value="other" selected>${t('doc_type_other')}</option></select></div>
+    <div class="form-row"><label>${t('lbl_doc_target')}</label><select id="d-target">${clientOptions}</select></div></div>
+    <div class="form-row"><label>${t('lbl_doc_file')}</label><input type="file" id="d-file" accept="application/pdf"></div>
+    <div id="d-status" class="muted" style="font-size:12.5px;"></div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" id="d-submit" onclick="uploadDocument()">${t('upload_document')}</button></div>`);
+}
+async function uploadDocument(){
+  const title = document.getElementById('d-title').value.trim();
+  const docType = document.getElementById('d-type').value;
+  const targetClientId = document.getElementById('d-target').value || null;
+  const fileInput = document.getElementById('d-file');
+  const file = fileInput.files[0];
+  if(!title || !file){ toast(t('err_generic'), ICONS.info); return; }
+  document.getElementById('d-status').textContent = t('uploading');
+  document.getElementById('d-submit').setAttribute('disabled','disabled');
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const path = `${targetClientId || 'standard'}/${Date.now()}_${safeName}`;
+  const { error: upErr } = await sb.storage.from('documents').upload(path, file, { contentType:'application/pdf', upsert:false });
+  if(upErr){ toast(upErr.message, ICONS.info); document.getElementById('d-status').textContent=''; document.getElementById('d-submit').removeAttribute('disabled'); return; }
+  const { error: insErr } = await sb.from('documents').insert({ title, doc_type:docType, client_id:targetClientId, file_path:path });
+  if(insErr){ toast(insErr.message, ICONS.info); return; }
+  await loadStaffData(); closeModal(); render();
+  toast(t('upload_document'));
+}
+async function viewDocumentFile(filePath){
+  const { data, error } = await sb.storage.from('documents').createSignedUrl(filePath, 300);
+  if(error || !data){ toast(t('err_generic'), ICONS.info); return; }
+  window.open(data.signedUrl, '_blank');
+}
+async function deleteDocument(id){
+  if(!confirm(t('confirm_delete_document'))) return;
+  const doc = state.documents.find(d=>d.id===id);
+  const { error } = await sb.from('documents').delete().eq('id', id);
+  if(error){ toast(error.message, ICONS.info); return; }
+  if(doc) await sb.storage.from('documents').remove([doc.filePath]);
+  await loadStaffData(); render();
+  toast(t('delete_document'));
+}
+
 /* ================================= REPORTS ================================= */
 function renderReports(){
   const totalRevenue = state.invoices.reduce((s,i)=>s+(Number(i.amountPaid)||0),0);
@@ -918,20 +1003,24 @@ function openQuickAddMenu(e){
 
 /* ============================ CLIENT PORTAL ============================ */
 async function loadClientPortalData(clientId){
-  if(!clientId){ clientPortalData = { client:null, properties:[], jobs:[], quotes:[], invoices:[] }; return; }
-  const [clientRes, propsRes, jobsRes, quotesRes, invRes] = await Promise.all([
+  if(!clientId){ clientPortalData = { client:null, properties:[], jobs:[], quotes:[], invoices:[], documents:[], documentSignatures:[] }; return; }
+  const [clientRes, propsRes, jobsRes, quotesRes, invRes, docsRes, sigsRes] = await Promise.all([
     sb.from('clients').select('*').eq('id', clientId).single(),
     sb.from('properties').select('*').eq('client_id', clientId),
     sb.from('jobs').select('*').eq('client_id', clientId),
     sb.from('quotes').select('*, quote_items(*)').eq('client_id', clientId),
-    sb.from('invoices').select('*, invoice_items(*)').eq('client_id', clientId)
+    sb.from('invoices').select('*, invoice_items(*)').eq('client_id', clientId),
+    sb.from('documents').select('*'),
+    sb.from('document_signatures').select('*').eq('client_id', clientId)
   ]);
   clientPortalData = {
     client: clientRes.data,
     properties: propsRes.data || [],
     jobs: (jobsRes.data||[]).map(j=>({ id:j.id, service:j.service_id, status:j.status, date:j.job_date, time:(j.job_time||'').slice(0,5) })),
     quotes: (quotesRes.data||[]).map(q=>({ id:q.id, service:q.service_id, status:q.status, taxRate:Number(q.tax_rate)||0, items:(q.quote_items||[]).map(it=>({desc:it.description, qty:Number(it.qty), rate:Number(it.rate)})) })),
-    invoices: (invRes.data||[]).map(inv=>({ id:inv.id, status:inv.status, issueDate:inv.issue_date, dueDate:inv.due_date, taxRate:Number(inv.tax_rate)||0, amountPaid:Number(inv.amount_paid)||0, items:(inv.invoice_items||[]).map(it=>({desc:it.description, qty:Number(it.qty), rate:Number(it.rate)})) }))
+    invoices: (invRes.data||[]).map(inv=>({ id:inv.id, status:inv.status, issueDate:inv.issue_date, dueDate:inv.due_date, taxRate:Number(inv.tax_rate)||0, amountPaid:Number(inv.amount_paid)||0, items:(inv.invoice_items||[]).map(it=>({desc:it.description, qty:Number(it.qty), rate:Number(it.rate)})) })),
+    documents: (docsRes.data||[]).map(d=>({ id:d.id, clientId:d.client_id, title:d.title, docType:d.doc_type, filePath:d.file_path })),
+    documentSignatures: (sigsRes.data||[]).map(s=>({ id:s.id, documentId:s.document_id, signedName:s.signed_name, signedAt:s.signed_at }))
   };
 }
 function renderClientPortal(){
@@ -952,6 +1041,9 @@ function renderClientPortal(){
   const upcoming = d.jobs.filter(j=>j.date>=today && j.status!=='completed').sort((a,b)=>a.date.localeCompare(b.date));
   const past = d.jobs.filter(j=>j.status==='completed').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   const pendingQuotes = d.quotes.filter(q=>q.status==='sent');
+  const signedDocIds = new Set(d.documentSignatures.map(s=>s.documentId));
+  const pendingDocs = d.documents.filter(doc=>!signedDocIds.has(doc.id));
+  const signedDocs = d.documents.filter(doc=>signedDocIds.has(doc.id)).map(doc=>({ doc, sig: d.documentSignatures.find(s=>s.documentId===doc.id) }));
   el.innerHTML = topbar + `
     <div class="cp-body">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:10px;">
@@ -981,12 +1073,40 @@ function renderClientPortal(){
           return `<tr><td>#${inv.id.slice(0,6)}</td><td>${fmtDateShort(inv.dueDate)}</td><td>${fmtMoney(tt.balance)}</td><td><span class="badge ${statusBadgeClass(inv.status)}">${statusLabel(inv.status)}</span></td><td>${inv.status!=='paid'?`<button class="btn btn-gold btn-sm" onclick="payInvoiceNow('${inv.id}')">${t('cp_pay_now')}</button>`:''}</td></tr>`;
         }).join('')}</tbody></table></div>` : `<div class="muted" style="font-size:12.5px;">${t('cp_no_invoices')}</div>`}
       </div>
+      <div class="card" style="margin-top:18px;"><div class="card-head"><h3>${t('cp_documents_title')}</h3></div>
+        <div class="small-caps" style="margin-bottom:8px;">${t('cp_documents_pending')}</div>
+        ${pendingDocs.length? pendingDocs.map(doc=>`<div class="job-card"><div class="jc-title">${escapeHtml(doc.title)}</div><div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-gold btn-sm" onclick="openSignDocumentModal('${doc.id}')">${ICONS.pen} ${t('cp_review_sign')}</button></div></div>`).join('') : `<div class="muted" style="font-size:12.5px;margin-bottom:14px;">${t('cp_no_documents_pending')}</div>`}
+        <div class="small-caps" style="margin:14px 0 8px;">${t('cp_documents_signed')}</div>
+        ${signedDocs.length? signedDocs.map(({doc,sig})=>`<div class="job-card" style="cursor:default;"><div class="jc-title">${escapeHtml(doc.title)}</div><div class="jc-meta">${ICONS.check} ${t('cp_signed_on')} ${fmtDate((sig.signedAt||'').slice(0,10))}</div></div>`).join('') : `<div class="muted" style="font-size:12.5px;">${t('cp_no_documents_signed')}</div>`}
+      </div>
       <div class="card" style="margin-top:18px;"><div class="card-head"><h3>${t('cp_past_services')}</h3></div>
         ${past.length? past.map(j=>{ const svc=getService(j.service);
           return `<div class="job-card" style="cursor:default;"><div class="jc-title">${svcName(svc)}</div><div class="jc-meta">${ICONS.calendar}${fmtDateShort(j.date)}</div></div>`;
         }).join('') : `<div class="muted" style="font-size:12.5px;">${t('cp_no_past')}</div>`}
       </div>
     </div>`;
+}
+function openSignDocumentModal(documentId){
+  const doc = clientPortalData.documents.find(d=>d.id===documentId);
+  if(!doc) return;
+  openModal(`<div class="modal-head"><h3>${t('cp_sign_modal_title')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-row"><button class="btn btn-outline btn-block" onclick="viewDocumentFile('${doc.filePath}')">${ICONS.doc} ${t('view_document_btn')}: ${escapeHtml(doc.title)}</button></div>
+    <div class="form-row"><label>${t('lbl_full_name_sign')}</label><input id="sig-name"></div>
+    <div class="form-row" style="display:flex;align-items:center;gap:8px;"><input type="checkbox" id="sig-agree" style="width:auto;"><label for="sig-agree" style="margin:0;font-weight:400;">${t('cp_sign_agree_checkbox')}</label></div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="signDocument('${doc.id}')">${ICONS.pen} ${t('cp_sign_button')}</button></div>`);
+}
+async function signDocument(documentId){
+  const name = document.getElementById('sig-name').value.trim();
+  const agreed = document.getElementById('sig-agree').checked;
+  if(!name || !agreed){ toast(t('err_generic'), ICONS.info); return; }
+  const { error } = await sb.rpc('client_sign_document', { p_document_id: documentId, p_signed_name: name });
+  if(error){ toast(error.message, ICONS.info); return; }
+  closeModal();
+  await loadClientPortalData(myProfile.client_id);
+  renderClientPortal();
+  toast(t('cp_doc_signed_toast'));
 }
 async function clientRespondQuote(quoteId, decision){
   const { error } = await sb.rpc('client_respond_to_quote', { p_quote_id: quoteId, p_decision: decision });
