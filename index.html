@@ -219,6 +219,17 @@ const T = {
   lbl_full_name_sign:{en:'Type your full legal name',es:'Escribe tu nombre completo'}, cp_sign_button:{en:'Sign',es:'Firmar'},
   cp_signed_on:{en:'Signed on',es:'Firmado el'}, cp_doc_signed_toast:{en:'Document signed. Thank you!',es:'Documento firmado. ¡Gracias!'},
   view_document_btn:{en:'View document',es:'Ver documento'}, signed_by:{en:'Signed by',es:'Firmado por'},
+  mfa_title:{en:'Enter your verification code',es:'Ingresa tu código de verificación'}, mfa_sub:{en:'Open your authenticator app and enter the 6-digit code.',es:'Abre tu app de autenticación e ingresa el código de 6 dígitos.'},
+  mfa_code_label:{en:'6-digit code',es:'Código de 6 dígitos'}, mfa_verify_btn:{en:'Verify',es:'Verificar'}, mfa_back:{en:'Back to sign in',es:'Volver a iniciar sesión'},
+  security_title:{en:'Security',es:'Seguridad'}, security_sub:{en:'Two-factor authentication for staff accounts',es:'Verificación en dos pasos para cuentas de staff'},
+  twofa_active:{en:'Two-factor authentication is ON',es:'La verificación en dos pasos está ACTIVADA'}, twofa_not_active:{en:'Two-factor authentication is OFF',es:'La verificación en dos pasos está DESACTIVADA'},
+  enable_2fa:{en:'Enable 2FA',es:'Activar 2FA'}, disable_2fa:{en:'Disable 2FA',es:'Desactivar 2FA'}, confirm_disable_2fa:{en:'Turn off two-factor authentication for your account?',es:'¿Desactivar la verificación en dos pasos de tu cuenta?'},
+  twofa_scan:{en:'Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)',es:'Escanea este código QR con tu app de autenticación (Google Authenticator, Authy, etc.)'},
+  twofa_enter_code:{en:'Then enter the 6-digit code it shows you to confirm:',es:'Luego ingresa el código de 6 dígitos que te muestra para confirmar:'},
+  twofa_confirm_btn:{en:'Confirm & activate',es:'Confirmar y activar'}, twofa_recommended:{en:'Recommended for anyone with full access to client data.',es:'Recomendado para quien tenga acceso completo a los datos de clientes.'},
+  backups_title:{en:'Backups',es:'Respaldos'}, backups_sub:{en:'Automatic weekly export of your business data',es:'Exportación semanal automática de los datos del negocio'},
+  no_backups:{en:'No backups yet — the first automatic one runs on the configured schedule.',es:'Aún no hay respaldos — el primero se genera automáticamente según lo programado.'},
+  download_backup:{en:'Download',es:'Descargar'}, th_backup_date:{en:'Date',es:'Fecha'}, th_backup_size:{en:'Size',es:'Tamaño'},
   sidebar_footer:{en:'Team dashboard',es:'Panel del equipo'},
   sign_out:{en:'Sign out',es:'Cerrar sesión'}, btn_new:{en:'New',es:'Nuevo'},
   helper_note:{en:'Connected to your live Supabase database. Changes here are real.',es:'Conectado a tu base de datos real en Supabase. Los cambios aquí son reales.'},
@@ -411,6 +422,38 @@ async function doSignIn(){
   const password = document.getElementById('si-password').value;
   const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if(error){ showAuthMsg(error.message, 'error'); return; }
+  const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  if(aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel){
+    renderMfaChallengeScreen();
+    return;
+  }
+  await afterLogin();
+}
+function renderMfaChallengeScreen(){
+  const screen = document.getElementById('auth-screen');
+  const brandMark = `<svg class="auth-mark" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="47" stroke="#C9A227" stroke-width="2.5"/><circle cx="50" cy="50" r="41" stroke="#C9A227" stroke-width="0.75"/><text x="50" y="61" text-anchor="middle" font-family="Playfair Display, serif" font-size="34" fill="#3A332C">DC</text></svg>`;
+  screen.style.display = 'flex';
+  screen.innerHTML = `
+    <div class="auth-card">
+      ${brandMark}
+      <h2>${t('mfa_title')}</h2>
+      <div class="sub">${t('mfa_sub')}</div>
+      <div class="auth-msg" id="auth-msg"></div>
+      <div class="form-row"><label>${t('mfa_code_label')}</label><input id="mfa-code" maxlength="6" inputmode="numeric" style="text-align:center;letter-spacing:6px;font-size:18px;"></div>
+      <button class="btn btn-gold btn-block" onclick="submitMfaChallenge()">${t('mfa_verify_btn')}</button>
+      <button class="auth-toggle" onclick="doSignOut()">${t('mfa_back')}</button>
+    </div>`;
+}
+async function submitMfaChallenge(){
+  const code = document.getElementById('mfa-code').value.trim();
+  if(!code){ showAuthMsg(t('err_generic'),'error'); return; }
+  const { data: factors, error: factorsErr } = await sb.auth.mfa.listFactors();
+  if(factorsErr || !factors || !factors.totp || !factors.totp.length){ showAuthMsg(t('err_generic'),'error'); return; }
+  const factorId = factors.totp[0].id;
+  const { data: challenge, error: challErr } = await sb.auth.mfa.challenge({ factorId });
+  if(challErr){ showAuthMsg(challErr.message,'error'); return; }
+  const { error: verifyErr } = await sb.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
+  if(verifyErr){ showAuthMsg(verifyErr.message,'error'); return; }
   await afterLogin();
 }
 async function doSignOut(){
@@ -427,6 +470,8 @@ async function afterLogin(){
   await loadServiceMeta();
   if(profile.role === 'staff'){
     await loadStaffData();
+    await refreshMfaFactors();
+    await refreshBackupFiles();
     document.getElementById('auth-screen').style.display='none';
     document.getElementById('app-shell').classList.add('visible');
     route='dashboard'; subRoute=null;
@@ -889,6 +934,23 @@ function openUploadDocumentModal(){
   </div>
   <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" id="d-submit" onclick="uploadDocument()">${t('upload_document')}</button></div>`);
 }
+const PDF_MAX_BYTES = 15 * 1024 * 1024;
+function readFileHeader(file, numBytes){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(new Uint8Array(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsArrayBuffer(file.slice(0, numBytes));
+  });
+}
+async function isRealPdf(file){
+  if(file.size > PDF_MAX_BYTES) return false;
+  try{
+    const header = await readFileHeader(file, 5);
+    const sig = String.fromCharCode.apply(null, header);
+    return sig === '%PDF-';
+  }catch(e){ return false; }
+}
 async function uploadDocument(){
   const title = document.getElementById('d-title').value.trim();
   const docType = document.getElementById('d-type').value;
@@ -896,6 +958,8 @@ async function uploadDocument(){
   const fileInput = document.getElementById('d-file');
   const file = fileInput.files[0];
   if(!title || !file){ toast(t('err_generic'), ICONS.info); return; }
+  const validPdf = await isRealPdf(file);
+  if(!validPdf){ toast(t('err_generic'), ICONS.info); return; }
   document.getElementById('d-status').textContent = t('uploading');
   document.getElementById('d-submit').setAttribute('disabled','disabled');
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
@@ -952,7 +1016,85 @@ function renderSettings(){
     </div></div>
   <div class="card" style="margin-top:18px;"><div class="card-head"><h3>${t('service_catalog')}</h3></div>
     ${Object.values(SERVICE_META).map(s=>`<div class="service-swatch"><div><div style="font-weight:500;font-size:13.5px;">${svcName(s)}</div><div class="cat">${categoryLabel(s.category)} · ${svcDesc(s)}</div></div><div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="font-size:12px;">$</span><input type="number" step="1" value="${s.rate}" style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;" onchange="updateServiceRate('${s.id}', this.value)"><span class="muted" style="font-size:11.5px;">/ ${unitLabel(s.unit)}</span></div></div>`).join('')}
+  </div>
+  <div class="grid grid-2" style="margin-top:18px;">
+    ${renderSecurityCard()}
+    ${renderBackupsCard()}
   </div>`;
+}
+function renderSecurityCard(){
+  const active = mfaFactors.length>0;
+  return `<div class="card"><div class="card-head"><h3>${t('security_title')}</h3></div>
+    <div class="muted" style="font-size:12.5px;margin-bottom:12px;">${t('security_sub')}</div>
+    <div class="info-line" style="justify-content:space-between;">
+      <span class="badge ${active?'badge-success':'badge-gray'}"><span class="badge-dot"></span>${active? t('twofa_active'): t('twofa_not_active')}</span>
+      ${active? `<button class="btn btn-outline btn-sm" onclick="disable2FA('${mfaFactors[0].id}')">${t('disable_2fa')}</button>` : `<button class="btn btn-gold btn-sm" onclick="startEnroll2FA()">${t('enable_2fa')}</button>`}
+    </div>
+    ${!active? `<div class="muted" style="font-size:11.5px;margin-top:8px;">${t('twofa_recommended')}</div>`:''}
+  </div>`;
+}
+function renderBackupsCard(){
+  return `<div class="card"><div class="card-head"><h3>${t('backups_title')}</h3></div>
+  <div class="muted" style="font-size:12.5px;margin-bottom:12px;">${t('backups_sub')}</div>
+  ${backupFiles.length? `<div class="table-wrap"><table><thead><tr><th>${t('th_backup_date')}</th><th>${t('th_backup_size')}</th><th></th></tr></thead><tbody>
+    ${backupFiles.map(f=>{ const kb = f.metadata && f.metadata.size ? Math.round(f.metadata.size/1024): null;
+      return `<tr><td>${fmtDate((f.created_at||'').slice(0,10))}</td><td>${kb!=null? kb+' KB':'—'}</td><td><button class="btn btn-outline btn-sm" onclick="downloadBackupFile('${f.name}')">${t('download_backup')}</button></td></tr>`;
+    }).join('')}
+  </tbody></table></div>` : `<div class="muted" style="font-size:12.5px;">${t('no_backups')}</div>`}
+  </div>`;
+}
+let mfaFactors = [];
+let backupFiles = [];
+async function refreshMfaFactors(){
+  const { data } = await sb.auth.mfa.listFactors();
+  mfaFactors = (data && data.totp) || [];
+}
+async function refreshBackupFiles(){
+  const { data } = await sb.storage.from('backups').list('', { sortBy: { column:'created_at', order:'desc' } });
+  backupFiles = (data || []).filter(f=>f.name && f.name.endsWith('.json'));
+}
+async function startEnroll2FA(){
+  const { data, error } = await sb.auth.mfa.enroll({ factorType:'totp' });
+  if(error){ toast(error.message, ICONS.info); return; }
+  const factorId = data.id;
+  const qr = data.totp.qr_code;
+  openModal(`<div class="modal-head"><h3>${t('enable_2fa')}</h3><button class="modal-close" onclick="cancelEnroll2FA('${factorId}')">✕</button></div>
+  <div class="modal-body" style="text-align:center;">
+    <p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">${t('twofa_scan')}</p>
+    <div style="display:flex;justify-content:center;margin-bottom:16px;">${qr}</div>
+    <p style="font-size:12.5px;color:var(--ink-soft);margin-bottom:8px;">${t('twofa_enter_code')}</p>
+    <input id="enroll-code" maxlength="6" inputmode="numeric" style="text-align:center;letter-spacing:6px;font-size:18px;width:160px;margin:0 auto;display:block;padding:9px;border:1px solid var(--border);border-radius:7px;">
+  </div>
+  <div class="modal-foot"><button class="btn btn-outline" onclick="cancelEnroll2FA('${factorId}')">${t('cancel')}</button><button class="btn btn-gold" onclick="confirmEnroll2FA('${factorId}')">${t('twofa_confirm_btn')}</button></div>`);
+}
+async function cancelEnroll2FA(factorId){
+  await sb.auth.mfa.unenroll({ factorId });
+  closeModal();
+}
+async function confirmEnroll2FA(factorId){
+  const code = document.getElementById('enroll-code').value.trim();
+  if(!code){ toast(t('err_generic'), ICONS.info); return; }
+  const { data: challenge, error: challErr } = await sb.auth.mfa.challenge({ factorId });
+  if(challErr){ toast(challErr.message, ICONS.info); return; }
+  const { error: verifyErr } = await sb.auth.mfa.verify({ factorId, challengeId: challenge.id, code });
+  if(verifyErr){ toast(verifyErr.message, ICONS.info); return; }
+  await refreshMfaFactors();
+  closeModal();
+  render();
+  toast(t('enable_2fa'));
+}
+async function disable2FA(factorId){
+  if(!confirm(t('confirm_disable_2fa'))) return;
+  const { error } = await sb.auth.mfa.unenroll({ factorId });
+  if(error){ toast(error.message, ICONS.info); return; }
+  await refreshMfaFactors();
+  render();
+  toast(t('disable_2fa'));
+}
+async function downloadBackupFile(name){
+  const { data, error } = await sb.storage.from('backups').createSignedUrl(name, 120);
+  if(error || !data){ toast(t('err_generic'), ICONS.info); return; }
+  window.open(data.signedUrl, '_blank');
 }
 async function saveBusiness(){
   const payload = { name:document.getElementById('s-name').value, tagline:document.getElementById('s-tagline').value, phone:document.getElementById('s-phone').value, email:document.getElementById('s-email').value, website:document.getElementById('s-website').value, tax_rate: parseFloat(document.getElementById('s-tax').value)||0, address:document.getElementById('s-address').value };
@@ -1154,7 +1296,11 @@ document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); }
 (async function boot(){
   renderAuthScreen('signin');
   const { data: { session } } = await sb.auth.getSession();
-  if(session){ await afterLogin(); }
+  if(session){
+    const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+    if(aal && aal.nextLevel === 'aal2' && aal.currentLevel !== aal.nextLevel){ renderMfaChallengeScreen(); }
+    else { await afterLogin(); }
+  }
   sb.auth.onAuthStateChange((event)=>{ if(event==='SIGNED_OUT'){ renderAuthScreen('signin'); } });
 })();
 </script>
