@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Clean by DC — Solicitar Estimado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+:root{
+  --bg:#F4F1E9; --bg-2:#FBFAF6; --card:#FFFFFF; --ink:#3A332C; --ink-soft:#726A5F; --ink-faint:#A79E90;
+  --gold:#A5792A; --gold-light:#C9A227; --gold-bg:#F4E9D2; --sage:#7C8B70; --sage-bg:#E7ECDF;
+  --border:#E3DDCE; --danger:#AE4A34; --danger-bg:#F3E1DA; --success:#5C7A4C; --success-bg:#E4EBDD;
+  --radius:10px; --shadow:0 1px 2px rgba(58,51,44,.06),0 6px 20px rgba(58,51,44,.06);
+}
+*{box-sizing:border-box;} html,body{height:100%;}
+body{margin:0;font-family:'Jost','Helvetica Neue',Arial,sans-serif;background:var(--ink);color:var(--ink);font-size:14.5px;line-height:1.5;
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+h1,h2,h3{font-family:'Playfair Display',Georgia,serif;font-weight:600;margin:0 0 4px 0;letter-spacing:.2px;}
+input,select,textarea{font-family:inherit;font-size:inherit;}
+.card{background:var(--bg-2);border-radius:14px;max-width:480px;width:100%;padding:34px 32px;box-shadow:0 30px 80px rgba(0,0,0,.4);position:relative;}
+.lang{position:absolute;top:20px;right:20px;display:flex;gap:6px;}
+.lang-btn{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--ink-soft);font-size:11.5px;letter-spacing:.5px;}
+.lang-btn.active{background:var(--gold);color:#fff;border-color:var(--gold);}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+.brand-mark{width:44px;height:44px;border-radius:10px;background:var(--ink);color:var(--gold-bg);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:17px;flex-shrink:0;}
+.brand .name{font-size:18px;} .brand .sub{font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink-soft);}
+.card h2{font-size:19px;margin-bottom:4px;} .card .sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:20px;}
+.form-row{margin-bottom:14px;text-align:left;} .form-row label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:7px;background:#fff;color:var(--ink);}
+textarea{min-height:70px;resize:vertical;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 18px;border-radius:8px;border:none;font-size:13.5px;font-weight:500;
+  background:var(--gold);color:#28221B;width:100%;margin-top:4px;}
+.btn:hover{opacity:.9;} .btn[disabled]{opacity:.5;}
+.msg{border-radius:7px;padding:9px 12px;font-size:12.5px;margin-bottom:14px;display:none;}
+.msg.show{display:block;} .msg.error{background:var(--danger-bg);color:var(--danger);} .msg.ok{background:var(--success-bg);color:var(--success);}
+.success{text-align:center;padding:10px 0;display:none;}
+.success.show{display:block;}
+.success svg{width:44px;height:44px;color:var(--success);margin-bottom:10px;}
+.footer-note{font-size:11px;color:var(--ink-faint);text-align:center;margin-top:16px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="lang" id="lang-toggle"></div>
+  <div class="brand">
+    <div class="brand-mark">DC</div>
+    <div><div class="name">Dream Clean by DC</div><div class="sub">Orlando</div></div>
+  </div>
+  <div id="form-view">
+    <h2 id="t-title"></h2>
+    <div class="sub" id="t-sub"></div>
+    <div class="msg" id="msg"></div>
+    <div class="form-row"><label id="l-name"></label><input id="f-name"></div>
+    <div class="form-grid">
+      <div class="form-row"><label id="l-phone"></label><input id="f-phone" type="tel"></div>
+      <div class="form-row"><label id="l-email"></label><input id="f-email" type="email"></div>
+    </div>
+    <div class="form-grid">
+      <div class="form-row"><label id="l-service"></label><select id="f-service"></select></div>
+      <div class="form-row"><label id="l-property"></label><select id="f-property"></select></div>
+    </div>
+    <div class="form-row"><label id="l-city"></label><input id="f-city"></div>
+    <div class="form-row"><label id="l-notes"></label><textarea id="f-notes"></textarea></div>
+    <button class="btn" id="btn-submit" onclick="submitLead()"></button>
+  </div>
+  <div class="success" id="success-view">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>
+    <h2 id="t-thanks-title"></h2>
+    <div class="sub" id="t-thanks-sub"></div>
+  </div>
+  <div class="footer-note" id="t-footer"></div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://gdnmgcqmdllviqjvyqot.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_gfOVX2vGt_OozmHrQxDW0A_nlqvrdOn';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let LANG = (navigator.language||'es').toLowerCase().startsWith('en') ? 'en' : 'es';
+
+const T = {
+  title:{en:'Request a free estimate',es:'Solicita tu estimado gratis'},
+  sub:{en:'Tell us a bit about your space and we’ll get back to you shortly.',es:'Cuéntanos un poco sobre tu espacio y te contactaremos pronto.'},
+  name:{en:'Full name',es:'Nombre completo'},
+  phone:{en:'Phone',es:'Teléfono'},
+  email:{en:'Email (optional)',es:'Correo (opcional)'},
+  service:{en:'Service type',es:'Tipo de servicio'},
+  property:{en:'Property type',es:'Tipo de propiedad'},
+  city:{en:'City',es:'Ciudad'},
+  notes:{en:'Tell us about your space (rooms, sq ft, etc.)',es:'Cuéntanos sobre tu espacio (habitaciones, tamaño, etc.)'},
+  submit:{en:'Request estimate',es:'Solicitar estimado'},
+  sending:{en:'Sending…',es:'Enviando…'},
+  err_required:{en:'Please enter your name and phone number.',es:'Por favor ingresa tu nombre y teléfono.'},
+  err_generic:{en:'Something went wrong. Please try again or call us directly.',es:'Algo salió mal. Intenta de nuevo o llámanos directamente.'},
+  thanks_title:{en:'Thank you!',es:'¡Gracias!'},
+  thanks_sub:{en:'We received your request and will contact you soon.',es:'Recibimos tu solicitud y te contactaremos pronto.'},
+  footer:{en:'Licensed · Insured · (407) 476-3556',es:'Licenciado · Asegurado · (407) 476-3556'},
+  svc_standard:{en:'Standard cleaning',es:'Limpieza estándar'},
+  svc_deep:{en:'Deep cleaning',es:'Limpieza profunda'},
+  svc_move:{en:'Move-in / Move-out',es:'Mudanza (entrada/salida)'},
+  svc_recurring:{en:'Recurring service',es:'Servicio recurrente'},
+  svc_other:{en:'Other / Not sure',es:'Otro / No estoy seguro'},
+  prop_house:{en:'House',es:'Casa'},
+  prop_apartment:{en:'Apartment',es:'Apartamento'},
+  prop_office:{en:'Office / Commercial',es:'Oficina / Comercial'},
+  prop_other:{en:'Other',es:'Otro'}
+};
+function t(k){ return (T[k] && T[k][LANG]) || k; }
+
+function renderLang(){
+  document.getElementById('lang-toggle').innerHTML =
+    `<button class="lang-btn ${LANG==='en'?'active':''}" onclick="setLang('en')">EN</button><button class="lang-btn ${LANG==='es'?'active':''}" onclick="setLang('es')">ES</button>`;
+}
+function setLang(l){ LANG=l; renderAll(); }
+function renderAll(){
+  renderLang();
+  document.getElementById('t-title').textContent = t('title');
+  document.getElementById('t-sub').textContent = t('sub');
+  document.getElementById('l-name').textContent = t('name');
+  document.getElementById('l-phone').textContent = t('phone');
+  document.getElementById('l-email').textContent = t('email');
+  document.getElementById('l-service').textContent = t('service');
+  document.getElementById('l-property').textContent = t('property');
+  document.getElementById('l-city').textContent = t('city');
+  document.getElementById('l-notes').textContent = t('notes');
+  document.getElementById('btn-submit').textContent = t('submit');
+  document.getElementById('t-thanks-title').textContent = t('thanks_title');
+  document.getElementById('t-thanks-sub').textContent = t('thanks_sub');
+  document.getElementById('t-footer').textContent = t('footer');
+  const svcSel = document.getElementById('f-service');
+  const prevSvc = svcSel.value;
+  svcSel.innerHTML = ['standard','deep','move','recurring','other'].map(v=>`<option value="${v}">${t('svc_'+v)}</option>`).join('');
+  if(prevSvc) svcSel.value = prevSvc;
+  const propSel = document.getElementById('f-property');
+  const prevProp = propSel.value;
+  propSel.innerHTML = `<option value="">—</option>` + ['house','apartment','office','other'].map(v=>`<option value="${v}">${t('prop_'+v)}</option>`).join('');
+  if(prevProp) propSel.value = prevProp;
+}
+function showMsg(text, type){
+  const el = document.getElementById('msg');
+  el.textContent = text; el.className = 'msg show ' + type;
+}
+async function submitLead(){
+  const name = document.getElementById('f-name').value.trim();
+  const phone = document.getElementById('f-phone').value.trim();
+  const email = document.getElementById('f-email').value.trim();
+  const service = document.getElementById('f-service').value;
+  const property = document.getElementById('f-property').value;
+  const city = document.getElementById('f-city').value.trim();
+  const notes = document.getElementById('f-notes').value.trim();
+  if(!name || !phone){ showMsg(t('err_required'), 'error'); return; }
+  const btn = document.getElementById('btn-submit');
+  btn.setAttribute('disabled','disabled'); btn.textContent = t('sending');
+  const { error } = await sb.rpc('submit_lead', {
+    p_full_name: name, p_phone: phone, p_email: email || null,
+    p_service_type: service, p_property_type: property || null, p_city: city || null, p_notes: notes || null
+  });
+  if(error){
+    showMsg(t('err_generic'), 'error');
+    btn.removeAttribute('disabled'); btn.textContent = t('submit');
+    return;
+  }
+  document.getElementById('form-view').style.display = 'none';
+  document.getElementById('success-view').classList.add('show');
+}
+renderAll();
+</script>
+</body>
+</html>
