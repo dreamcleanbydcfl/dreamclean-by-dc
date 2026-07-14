@@ -188,7 +188,8 @@ const ICONS = {
   x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
   doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h7l4 4v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z"/><path d="M14 3v4h4"/><path d="M9 13h6M9 16.5h6"/></svg>',
   pen:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
-  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4"/><path d="m6 9 6-6 6 6"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>'
+  upload:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 16V4"/><path d="m6 9 6-6 6 6"/><path d="M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>',
+  leads:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h4l2 3h4l2-3h4"/><path d="M5.5 6h13l1.5 6v6a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-6Z"/></svg>'
 };
 
 let LANG = localStorage.getItem('dreamclean_lang') || 'en';
@@ -219,6 +220,15 @@ const T = {
   lbl_full_name_sign:{en:'Type your full legal name',es:'Escribe tu nombre completo'}, cp_sign_button:{en:'Sign',es:'Firmar'},
   cp_signed_on:{en:'Signed on',es:'Firmado el'}, cp_doc_signed_toast:{en:'Document signed. Thank you!',es:'Documento firmado. ¡Gracias!'},
   view_document_btn:{en:'View document',es:'Ver documento'}, signed_by:{en:'Signed by',es:'Firmado por'},
+  nav_leads:{en:'Leads',es:'Prospectos'}, leads_sub:{en:'Estimate requests from your digital card and website',es:'Solicitudes de estimado de tu tarjeta digital y sitio web'},
+  th_lead_name:{en:'Name',es:'Nombre'}, th_lead_contact:{en:'Phone',es:'Teléfono'}, th_lead_service:{en:'Interested in',es:'Interesado en'},
+  th_lead_received:{en:'Received',es:'Recibido'}, no_leads:{en:'No leads yet. New estimate requests will show up here automatically.',es:'Aún no hay prospectos. Las nuevas solicitudes de estimado aparecerán aquí automáticamente.'},
+  lead_status_new:{en:'New',es:'Nuevo'}, lead_status_contacted:{en:'Contacted',es:'Contactado'}, lead_status_converted:{en:'Converted',es:'Convertido'}, lead_status_lost:{en:'Lost',es:'Perdido'},
+  convert_to_client:{en:'Convert to client',es:'Convertir en cliente'}, lead_converted_toast:{en:'Lead converted to client',es:'Prospecto convertido en cliente'},
+  lbl_staff_notes:{en:'Internal follow-up notes',es:'Notas internas de seguimiento'},
+  svc_lead_standard:{en:'Standard cleaning',es:'Limpieza estándar'}, svc_lead_deep:{en:'Deep cleaning',es:'Limpieza profunda'},
+  svc_lead_move:{en:'Move-in / Move-out',es:'Mudanza (entrada/salida)'}, svc_lead_recurring:{en:'Recurring service',es:'Servicio recurrente'}, svc_lead_other:{en:'Other / Not sure',es:'Otro / No está seguro'},
+  lbl_lead_property:{en:'Property type',es:'Tipo de propiedad'}, lbl_lead_city:{en:'City',es:'Ciudad'},
   mfa_title:{en:'Enter your verification code',es:'Ingresa tu código de verificación'}, mfa_sub:{en:'Open your authenticator app and enter the 6-digit code.',es:'Abre tu app de autenticación e ingresa el código de 6 dígitos.'},
   mfa_code_label:{en:'6-digit code',es:'Código de 6 dígitos'}, mfa_verify_btn:{en:'Verify',es:'Verificar'}, mfa_back:{en:'Back to sign in',es:'Volver a iniciar sesión'},
   security_title:{en:'Security',es:'Seguridad'}, security_sub:{en:'Two-factor authentication for staff accounts',es:'Verificación en dos pasos para cuentas de staff'},
@@ -495,7 +505,7 @@ async function loadServiceMeta(){
 
 /* ============================ STAFF DATA LAYER ============================ */
 async function loadStaffData(){
-  const [clientsRes, propsRes, teamRes, quotesRes, jobsRes, invRes, bizRes, profilesRes, docsRes, sigsRes] = await Promise.all([
+  const [clientsRes, propsRes, teamRes, quotesRes, jobsRes, invRes, bizRes, profilesRes, docsRes, sigsRes, leadsRes] = await Promise.all([
     sb.from('clients').select('*').order('name'),
     sb.from('properties').select('*'),
     sb.from('team_members').select('*'),
@@ -505,7 +515,8 @@ async function loadStaffData(){
     sb.from('business_settings').select('*').eq('id',1).single(),
     sb.from('profiles').select('id, client_id, role').eq('role','client'),
     sb.from('documents').select('*').order('created_at', {ascending:false}),
-    sb.from('document_signatures').select('*')
+    sb.from('document_signatures').select('*'),
+    sb.from('leads').select('*').order('created_at', {ascending:false})
   ]);
   const props = propsRes.data || [];
   state = {
@@ -533,7 +544,8 @@ async function loadStaffData(){
       website:bizRes.data.website, address:bizRes.data.address, taxRate:Number(bizRes.data.tax_rate)||0
     } : { name:'Dream Clean by DC', taxRate:0 },
     documents: (docsRes.data||[]).map(d=>({ id:d.id, clientId:d.client_id, title:d.title, docType:d.doc_type, filePath:d.file_path, createdAt:d.created_at })),
-    documentSignatures: (sigsRes.data||[]).map(s=>({ id:s.id, documentId:s.document_id, clientId:s.client_id, signedName:s.signed_name, signedAt:s.signed_at }))
+    documentSignatures: (sigsRes.data||[]).map(s=>({ id:s.id, documentId:s.document_id, clientId:s.client_id, signedName:s.signed_name, signedAt:s.signed_at })),
+    leads: (leadsRes.data||[]).map(l=>({ id:l.id, fullName:l.full_name, phone:l.phone, email:l.email, serviceType:l.service_type, propertyType:l.property_type, city:l.city, notes:l.notes, status:l.status, source:l.source, convertedClientId:l.converted_client_id, staffNotes:l.staff_notes, createdAt:l.created_at }))
   };
 }
 function serviceOptionsHtml(selected){
@@ -542,8 +554,8 @@ function serviceOptionsHtml(selected){
 function clientPortalLinked(clientId){ return !!(state.linkedClientIds && state.linkedClientIds.has(clientId)); }
 
 /* ================================= ROUTER / NAV ================================= */
-const NAV_ITEMS=[{route:'dashboard',key:'nav_dashboard',icon:'dashboard'},{route:'clients',key:'nav_clients',icon:'clients'},{route:'quotes',key:'nav_quotes',icon:'quotes'},{route:'jobs',key:'nav_jobs',icon:'jobs'},{route:'calendar',key:'nav_calendar',icon:'calendar'},{route:'invoices',key:'nav_invoices',icon:'invoices'},{route:'documents',key:'nav_documents',icon:'doc'},{route:'reports',key:'nav_reports',icon:'reports'},{route:'settings',key:'nav_settings',icon:'settings'}];
-const PAGE_TITLE_KEYS={dashboard:['nav_dashboard','dashboard_sub'],clients:['nav_clients','clients_sub'],quotes:['nav_quotes','quotes_sub'],jobs:['nav_jobs','jobs_sub'],calendar:['nav_calendar','calendar_sub'],invoices:['nav_invoices','invoices_sub'],documents:['nav_documents','documents_sub'],reports:['nav_reports','reports_sub'],settings:['nav_settings','settings_sub']};
+const NAV_ITEMS=[{route:'dashboard',key:'nav_dashboard',icon:'dashboard'},{route:'leads',key:'nav_leads',icon:'leads'},{route:'clients',key:'nav_clients',icon:'clients'},{route:'quotes',key:'nav_quotes',icon:'quotes'},{route:'jobs',key:'nav_jobs',icon:'jobs'},{route:'calendar',key:'nav_calendar',icon:'calendar'},{route:'invoices',key:'nav_invoices',icon:'invoices'},{route:'documents',key:'nav_documents',icon:'doc'},{route:'reports',key:'nav_reports',icon:'reports'},{route:'settings',key:'nav_settings',icon:'settings'}];
+const PAGE_TITLE_KEYS={dashboard:['nav_dashboard','dashboard_sub'],leads:['nav_leads','leads_sub'],clients:['nav_clients','clients_sub'],quotes:['nav_quotes','quotes_sub'],jobs:['nav_jobs','jobs_sub'],calendar:['nav_calendar','calendar_sub'],invoices:['nav_invoices','invoices_sub'],documents:['nav_documents','documents_sub'],reports:['nav_reports','reports_sub'],settings:['nav_settings','settings_sub']};
 function navigate(r,sub){ route=r; subRoute=sub||null; render(); window.scrollTo(0,0); }
 function renderNav(){
   document.getElementById('nav-list').innerHTML = NAV_ITEMS.map(item=>`<li><a href="#" class="${route===item.route?'active':''}" onclick="navigate('${item.route}');return false;">${ICONS[item.icon]}<span>${t(item.key)}</span></a></li>`).join('');
@@ -559,6 +571,7 @@ function render(){
   document.getElementById('page-sub').textContent = t(keys[1]);
   const view = document.getElementById('view');
   if(route==='dashboard') view.innerHTML = renderDashboard();
+  else if(route==='leads') view.innerHTML = renderLeads();
   else if(route==='clients') view.innerHTML = subRoute? renderClientDetail(subRoute): renderClients();
   else if(route==='quotes') view.innerHTML = renderQuotes();
   else if(route==='jobs') view.innerHTML = renderJobs();
@@ -616,6 +629,76 @@ function renderDashboard(){
         }).join('')}
       </div>
     </div>`;
+}
+
+/* ================================== LEADS ================================== */
+let leadFilter='all';
+function leadServiceLabel(code){ const m={standard:'svc_lead_standard',deep:'svc_lead_deep',move:'svc_lead_move',recurring:'svc_lead_recurring',other:'svc_lead_other'}; return code? t(m[code]||'svc_lead_other') : '—'; }
+function leadStatusLabel(s){ const m={new:'lead_status_new',contacted:'lead_status_contacted',converted:'lead_status_converted',lost:'lead_status_lost'}; return t(m[s]||'lead_status_new'); }
+function leadStatusBadgeClass(s){ const m={new:'badge-info',contacted:'badge-gold',converted:'badge-success',lost:'badge-danger'}; return m[s]||'badge-gray'; }
+function renderLeads(){
+  let list = state.leads.slice();
+  if(leadFilter!=='all') list = list.filter(l=>l.status===leadFilter);
+  list.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  return `<div class="toolbar"><div class="filters">${[['all','filter_all'],['new','lead_status_new'],['contacted','lead_status_contacted'],['converted','lead_status_converted'],['lost','lead_status_lost']].map(([code,key])=>`<button class="chip ${leadFilter===code?'active':''}" onclick="leadFilter='${code}';render();">${t(key)}</button>`).join('')}</div></div>
+  <div class="card" style="padding:0;"><div class="table-wrap"><table><thead><tr><th>${t('th_lead_name')}</th><th>${t('th_lead_contact')}</th><th>${t('th_lead_service')}</th><th>${t('th_lead_received')}</th><th>${t('th_status')}</th><th></th></tr></thead><tbody>
+  ${list.length? list.map(l=>`<tr onclick="openLeadDetailModal('${l.id}')"><td class="row-name">${escapeHtml(l.fullName)}<span class="sub">${escapeHtml(l.city||'')}</span></td><td><span class="muted">${escapeHtml(l.phone||'')}</span></td><td>${leadServiceLabel(l.serviceType)}</td><td>${fmtDateShort((l.createdAt||'').slice(0,10))}</td><td><span class="badge ${leadStatusBadgeClass(l.status)}"><span class="badge-dot"></span>${leadStatusLabel(l.status)}</span></td><td onclick="event.stopPropagation()">${l.status!=='converted'?`<button class="btn btn-sage btn-sm" onclick="openConvertLeadModal('${l.id}')">${t('convert_to_client')}</button>`:''}</td></tr>`).join('')
+  : `<tr><td colspan="6"><div class="empty">${ICONS.leads}<h4>${t('no_leads')}</h4></div></td></tr>`}
+  </tbody></table></div></div>`;
+}
+function openLeadDetailModal(id){
+  const l = state.leads.find(x=>x.id===id);
+  if(!l) return;
+  openModal(`
+    <div class="modal-head"><h3>${escapeHtml(l.fullName)}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="info-line">${ICONS.phone}<b>${escapeHtml(l.phone||'')}</b></div>
+      ${l.email?`<div class="info-line">${ICONS.mail}<b>${escapeHtml(l.email)}</b></div>`:''}
+      <div class="info-line">${ICONS.info}<b>${leadServiceLabel(l.serviceType)}</b>${l.propertyType?` · ${escapeHtml(l.propertyType)}`:''}${l.city?` · ${escapeHtml(l.city)}`:''}</div>
+      ${l.notes?`<div class="info-line" style="align-items:flex-start;">${ICONS.doc}<span>${escapeHtml(l.notes)}</span></div>`:''}
+      <div class="form-row" style="margin-top:10px;"><label>${t('lbl_status')}</label><select id="ld-status">${['new','contacted','converted','lost'].map(s=>`<option value="${s}" ${l.status===s?'selected':''}>${leadStatusLabel(s)}</option>`).join('')}</select></div>
+      <div class="form-row"><label>${t('lbl_staff_notes')}</label><textarea id="ld-staffnotes">${escapeHtml(l.staffNotes||'')}</textarea></div>
+    </div>
+    <div class="modal-foot">${l.status!=='converted'?`<button class="btn btn-sage" style="margin-right:auto;" onclick="openConvertLeadModal('${l.id}')">${t('convert_to_client')}</button>`:''}<button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="saveLeadStatus('${l.id}')">${t('save_changes')}</button></div>`);
+}
+async function saveLeadStatus(id){
+  const status=document.getElementById('ld-status').value, staffNotes=document.getElementById('ld-staffnotes').value.trim();
+  const { error } = await sb.from('leads').update({status, staff_notes:staffNotes}).eq('id', id);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); closeModal(); render();
+  toast(t('save_changes'));
+}
+function leadContextNotes(lead){
+  const parts=[];
+  if(lead.serviceType) parts.push(`${t('lbl_service_type')}: ${leadServiceLabel(lead.serviceType)}`);
+  if(lead.propertyType) parts.push(`${t('lbl_lead_property')}: ${lead.propertyType}`);
+  if(lead.city) parts.push(`${t('lbl_lead_city')}: ${lead.city}`);
+  if(lead.notes) parts.push(lead.notes);
+  return parts.join('\n');
+}
+function openConvertLeadModal(leadId){
+  const lead = state.leads.find(l=>l.id===leadId);
+  if(!lead) return;
+  openModal(`
+    <div class="modal-head"><h3>${t('convert_to_client')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid"><div class="form-row"><label>${t('lbl_full_name')}</label><input id="cl-name" value="${escapeHtml(lead.fullName)}"></div>
+      <div class="form-row"><label>${t('lbl_client_type')}</label><select id="cl-type"><option value="residential">${t('residential')}</option><option value="commercial">${t('commercial')}</option></select></div></div>
+      <div class="form-grid"><div class="form-row"><label>${t('lbl_email')}</label><input id="cl-email" value="${escapeHtml(lead.email||'')}"></div><div class="form-row"><label>${t('lbl_phone')}</label><input id="cl-phone" value="${escapeHtml(lead.phone||'')}"></div></div>
+      <div class="form-row"><label>${t('lbl_notes')}</label><textarea id="cl-notes">${escapeHtml(leadContextNotes(lead))}</textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="saveConvertedClient('${lead.id}')">${t('convert_to_client')}</button></div>`);
+}
+async function saveConvertedClient(leadId){
+  const name=document.getElementById('cl-name').value.trim();
+  if(!name){ toast(t('err_generic'), ICONS.info); return; }
+  const type=document.getElementById('cl-type').value, email=document.getElementById('cl-email').value.trim(), phone=document.getElementById('cl-phone').value.trim(), notes=document.getElementById('cl-notes').value.trim();
+  const { data, error } = await sb.from('clients').insert({name,type,email,phone,notes}).select().single();
+  if(error){ toast(error.message, ICONS.info); return; }
+  const { error: leadErr } = await sb.from('leads').update({status:'converted', converted_client_id:data.id}).eq('id', leadId);
+  if(leadErr){ toast(leadErr.message, ICONS.info); return; }
+  await loadStaffData(); closeModal(); navigate('clients', data.id);
+  toast(t('lead_converted_toast'));
 }
 
 /* ================================= CLIENTS ================================ */
