@@ -234,6 +234,23 @@ const T = {
   lbl_lead_bedbath:{en:'Bed / Bath',es:'Cuartos / Baños'}, lbl_lead_frequency:{en:'Frequency',es:'Frecuencia'},
   lbl_lead_addons:{en:'Add-ons requested',es:'Extras solicitados'}, lbl_lead_estimate_shown:{en:'Estimate shown to client',es:'Estimado que vio el cliente'},
   lbl_sms_consent:{en:'SMS consent',es:'Consentimiento SMS'}, sms_consent_yes:{en:'Given',es:'Otorgado'}, sms_consent_no:{en:'Not given',es:'No otorgado'},
+  lbl_lead_discount:{en:'Discount code used',es:'Código de descuento usado'}, lbl_lead_preferred:{en:'Preferred date/time',es:'Fecha/hora preferida'},
+  discount_codes_title:{en:'Discount codes',es:'Códigos de descuento'}, discount_codes_sub:{en:'Codes for company partnerships (e.g. ATRIUM15 = 15% off)',es:'Códigos para convenios con empresas (ej. ATRIUM15 = 15% off)'},
+  add_discount_code:{en:'Add code',es:'Agregar código'}, th_code:{en:'Code',es:'Código'}, th_percent:{en:'% Off',es:'% Descuento'}, th_active:{en:'Active',es:'Activo'},
+  lbl_discount_code:{en:'Code (e.g. ATRIUM15)',es:'Código (ej. ATRIUM15)'}, lbl_discount_percent:{en:'Percent off',es:'% de descuento'},
+  no_discount_codes:{en:'No discount codes yet.',es:'Aún no hay códigos de descuento.'}, confirm_delete_discount_code:{en:'Delete this discount code?',es:'¿Eliminar este código de descuento?'},
+  new_discount_code_title:{en:'New discount code',es:'Nuevo código de descuento'}, edit_discount_code_title:{en:'Edit discount code',es:'Editar código de descuento'},
+  activate_code:{en:'Activate',es:'Activar'}, deactivate_code:{en:'Deactivate',es:'Desactivar'},
+  lbl_discount_kind:{en:'Discount type',es:'Tipo de descuento'}, opt_percent:{en:'Percent (%)',es:'Porcentaje (%)'}, opt_flat:{en:'Flat amount ($)',es:'Monto fijo ($)'},
+  lbl_discount_amount:{en:'Amount off ($)',es:'Monto de descuento ($)'},
+  lbl_lead_referred_by:{en:'Referred by',es:'Referido por'},
+  referral_commissions_title:{en:'Referral commissions (Introduction Program)',es:'Comisiones de referidos (Introduction Program)'},
+  referral_commissions_sub:{en:'Track commissions owed to realtors, designers, and trade partners',es:'Registra las comisiones que se le deben a realtors, diseñadores y socios comerciales'},
+  add_referral_commission:{en:'Add commission',es:'Agregar comisión'}, th_partner:{en:'Partner',es:'Socio'}, th_referred_client:{en:'Referred client',es:'Cliente referido'},
+  th_commission_amount:{en:'Commission',es:'Comisión'}, commission_paid:{en:'Paid',es:'Pagada'}, commission_pending:{en:'Pending',es:'Pendiente'},
+  mark_paid:{en:'Mark paid',es:'Marcar pagada'}, no_referral_commissions:{en:'No commissions tracked yet.',es:'Aún no hay comisiones registradas.'},
+  new_referral_commission_title:{en:'New referral commission',es:'Nueva comisión de referido'}, lbl_partner_name:{en:'Partner / company name',es:'Nombre del socio / empresa'},
+  lbl_referred_client:{en:'Referred client',es:'Cliente referido'}, confirm_delete_commission:{en:'Delete this commission record?',es:'¿Eliminar este registro de comisión?'},
   mfa_title:{en:'Enter your verification code',es:'Ingresa tu código de verificación'}, mfa_sub:{en:'Open your authenticator app and enter the 6-digit code.',es:'Abre tu app de autenticación e ingresa el código de 6 dígitos.'},
   mfa_code_label:{en:'6-digit code',es:'Código de 6 dígitos'}, mfa_verify_btn:{en:'Verify',es:'Verificar'}, mfa_back:{en:'Back to sign in',es:'Volver a iniciar sesión'},
   security_title:{en:'Security',es:'Seguridad'}, security_sub:{en:'Two-factor authentication for staff accounts',es:'Verificación en dos pasos para cuentas de staff'},
@@ -510,7 +527,7 @@ async function loadServiceMeta(){
 
 /* ============================ STAFF DATA LAYER ============================ */
 async function loadStaffData(){
-  const [clientsRes, propsRes, teamRes, quotesRes, jobsRes, invRes, bizRes, profilesRes, docsRes, sigsRes, leadsRes] = await Promise.all([
+  const [clientsRes, propsRes, teamRes, quotesRes, jobsRes, invRes, bizRes, profilesRes, docsRes, sigsRes, leadsRes, discountRes, referralRes] = await Promise.all([
     sb.from('clients').select('*').order('name'),
     sb.from('properties').select('*'),
     sb.from('team_members').select('*'),
@@ -521,7 +538,9 @@ async function loadStaffData(){
     sb.from('profiles').select('id, client_id, role').eq('role','client'),
     sb.from('documents').select('*').order('created_at', {ascending:false}),
     sb.from('document_signatures').select('*'),
-    sb.from('leads').select('*').order('created_at', {ascending:false})
+    sb.from('leads').select('*').order('created_at', {ascending:false}),
+    sb.from('discount_codes').select('*').order('created_at', {ascending:false}),
+    sb.from('referral_commissions').select('*').order('created_at', {ascending:false})
   ]);
   const props = propsRes.data || [];
   state = {
@@ -551,7 +570,10 @@ async function loadStaffData(){
     documents: (docsRes.data||[]).map(d=>({ id:d.id, clientId:d.client_id, title:d.title, docType:d.doc_type, filePath:d.file_path, createdAt:d.created_at })),
     documentSignatures: (sigsRes.data||[]).map(s=>({ id:s.id, documentId:s.document_id, clientId:s.client_id, signedName:s.signed_name, signedAt:s.signed_at })),
     leads: (leadsRes.data||[]).map(l=>({ id:l.id, fullName:l.full_name, phone:l.phone, email:l.email, serviceType:l.service_type, propertyType:l.property_type, city:l.city, notes:l.notes, status:l.status, source:l.source, convertedClientId:l.converted_client_id, staffNotes:l.staff_notes, createdAt:l.created_at,
-      sqft:l.sqft, bedrooms:l.bedrooms, bathrooms:l.bathrooms, frequency:l.frequency, addons:l.addons, estimatedRange:l.estimated_range, smsConsent:!!l.sms_consent }))
+      sqft:l.sqft, bedrooms:l.bedrooms, bathrooms:l.bathrooms, frequency:l.frequency, addons:l.addons, estimatedRange:l.estimated_range, smsConsent:!!l.sms_consent,
+      discountCode:l.discount_code, discountPercent:l.discount_percent, preferredDate:l.preferred_date, preferredTime:l.preferred_time, referredBy:l.referred_by })),
+    discountCodes: (discountRes.data||[]).map(d=>({ code:d.code, discountType:d.discount_type||'percent', percentOff:d.percent_off!=null?Number(d.percent_off):null, amountOff:d.amount_off!=null?Number(d.amount_off):null, active:!!d.active, notes:d.notes, createdAt:d.created_at })),
+    referralCommissions: (referralRes.data||[]).map(r=>({ id:r.id, partnerName:r.partner_name, referredClientName:r.referred_client_name, clientId:r.client_id, commissionAmount:r.commission_amount!=null?Number(r.commission_amount):null, status:r.status, notes:r.notes, createdAt:r.created_at, paidAt:r.paid_at }))
   };
 }
 function serviceOptionsHtml(selected){
@@ -666,6 +688,9 @@ function openLeadDetailModal(id){
       ${l.addons?`<div class="info-line" style="align-items:flex-start;">${ICONS.check}<span><b>${t('lbl_lead_addons')}:</b> ${escapeHtml(l.addons)}</span></div>`:''}
       ${l.estimatedRange?`<div class="info-line"><b style="color:var(--gold);font-family:'Playfair Display',serif;font-size:16px;">${escapeHtml(l.estimatedRange)}</b>&nbsp;<span class="muted" style="font-size:11.5px;">— ${t('lbl_lead_estimate_shown')}</span></div>`:''}
       <div class="info-line">${ICONS.check}<b>${t('lbl_sms_consent')}:</b>&nbsp;<span class="badge ${l.smsConsent?'badge-success':'badge-gray'}">${l.smsConsent?t('sms_consent_yes'):t('sms_consent_no')}</span></div>
+      ${l.preferredDate?`<div class="info-line">${ICONS.calendar}<b>${t('lbl_lead_preferred')}:</b>&nbsp;${fmtDateShort(l.preferredDate)}${l.preferredTime?' · '+escapeHtml(l.preferredTime):''}</div>`:''}
+      ${l.discountCode?`<div class="info-line">${ICONS.info}<b>${t('lbl_lead_discount')}:</b>&nbsp;${escapeHtml(l.discountCode)}${l.discountPercent?' ('+l.discountPercent+'% off)':''}</div>`:''}
+      ${l.referredBy?`<div class="info-line">${ICONS.user}<b>${t('lbl_lead_referred_by')}:</b>&nbsp;${escapeHtml(l.referredBy)}</div>`:''}
       ${l.notes?`<div class="info-line" style="align-items:flex-start;">${ICONS.doc}<span>${escapeHtml(l.notes)}</span></div>`:''}
       <div class="form-row" style="margin-top:10px;"><label>${t('lbl_status')}</label><select id="ld-status">${['new','contacted','converted','lost'].map(s=>`<option value="${s}" ${l.status===s?'selected':''}>${leadStatusLabel(s)}</option>`).join('')}</select></div>
       <div class="form-row"><label>${t('lbl_staff_notes')}</label><textarea id="ld-staffnotes">${escapeHtml(l.staffNotes||'')}</textarea></div>
@@ -686,6 +711,9 @@ function leadContextNotes(lead){
   if(lead.frequency) parts.push(`${t('lbl_lead_frequency')}: ${lead.frequency}`);
   if(lead.addons) parts.push(`${t('lbl_lead_addons')}: ${lead.addons}`);
   if(lead.estimatedRange) parts.push(`${t('lbl_lead_estimate_shown')}: ${lead.estimatedRange}`);
+  if(lead.preferredDate) parts.push(`${t('lbl_lead_preferred')}: ${lead.preferredDate}${lead.preferredTime?' · '+lead.preferredTime:''}`);
+  if(lead.discountCode) parts.push(`${t('lbl_lead_discount')}: ${lead.discountCode}${lead.discountPercent?' ('+lead.discountPercent+'% off)':''}`);
+  if(lead.referredBy) parts.push(`${t('lbl_lead_referred_by')}: ${lead.referredBy}`);
   if(lead.propertyType) parts.push(`${t('lbl_lead_property')}: ${lead.propertyType}`);
   if(lead.city) parts.push(`${t('lbl_lead_city')}: ${lead.city}`);
   if(lead.notes) parts.push(lead.notes);
@@ -1115,10 +1143,110 @@ function renderSettings(){
   <div class="card" style="margin-top:18px;"><div class="card-head"><h3>${t('service_catalog')}</h3></div>
     ${Object.values(SERVICE_META).map(s=>`<div class="service-swatch"><div><div style="font-weight:500;font-size:13.5px;">${svcName(s)}</div><div class="cat">${categoryLabel(s.category)} · ${svcDesc(s)}</div></div><div style="display:flex;align-items:center;gap:8px;"><span class="muted" style="font-size:12px;">$</span><input type="number" step="1" value="${s.rate}" style="width:90px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;" onchange="updateServiceRate('${s.id}', this.value)"><span class="muted" style="font-size:11.5px;">/ ${unitLabel(s.unit)}</span></div></div>`).join('')}
   </div>
+  <div class="card" style="margin-top:18px;">${renderDiscountCodesCard()}</div>
+  <div class="card" style="margin-top:18px;">${renderReferralCommissionsCard()}</div>
   <div class="grid grid-2" style="margin-top:18px;">
     ${renderSecurityCard()}
     ${renderBackupsCard()}
   </div>`;
+}
+function renderReferralCommissionsCard(){
+  const rows = (state.referralCommissions||[]).slice();
+  return `<div class="card-head"><h3>${t('referral_commissions_title')}</h3><button class="btn btn-outline btn-sm" onclick="openReferralCommissionModal()">+ ${t('add_referral_commission')}</button></div>
+  <div class="muted" style="font-size:12.5px;margin-bottom:12px;">${t('referral_commissions_sub')}</div>
+  ${rows.length? `<div class="table-wrap"><table><thead><tr><th>${t('th_partner')}</th><th>${t('th_referred_client')}</th><th>${t('th_commission_amount')}</th><th>${t('th_status')}</th><th></th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td class="row-name">${escapeHtml(r.partnerName)}</td><td>${escapeHtml(r.referredClientName||'—')}</td><td>${r.commissionAmount!=null?fmtMoney(r.commissionAmount):'—'}</td><td><span class="badge ${r.status==='paid'?'badge-success':'badge-gold'}"><span class="badge-dot"></span>${r.status==='paid'?t('commission_paid'):t('commission_pending')}</span></td><td onclick="event.stopPropagation()" style="display:flex;gap:6px;">${r.status!=='paid'?`<button class="btn btn-outline btn-sm" onclick="markCommissionPaid('${r.id}')">${t('mark_paid')}</button>`:''}<button class="btn-icon" onclick="deleteReferralCommission('${r.id}')">${ICONS.trash}</button></td></tr>`).join('')}
+  </tbody></table></div>` : `<div class="empty">${ICONS.info}<h4>${t('no_referral_commissions')}</h4></div>`}`;
+}
+function openReferralCommissionModal(){
+  openModal(`<div class="modal-head"><h3>${t('new_referral_commission_title')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-row"><label>${t('lbl_partner_name')}</label><input id="rc-partner" placeholder="e.g. Jane Smith Realty"></div>
+    <div class="form-grid"><div class="form-row"><label>${t('lbl_referred_client')}</label><input id="rc-client" placeholder="Client name"></div>
+    <div class="form-row"><label>${t('lbl_commission_amount')}</label><input type="number" min="0" step="1" id="rc-amount"></div></div>
+    <div class="form-row"><label>${t('lbl_notes')}</label><textarea id="rc-notes" placeholder="e.g. 10% of first month, per written agreement"></textarea></div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="saveReferralCommission()">${t('save_changes')}</button></div>`);
+}
+async function saveReferralCommission(){
+  const partnerName = document.getElementById('rc-partner').value.trim();
+  const referredClientName = document.getElementById('rc-client').value.trim();
+  const commissionAmount = parseFloat(document.getElementById('rc-amount').value) || null;
+  const notes = document.getElementById('rc-notes').value.trim();
+  if(!partnerName){ toast(t('err_generic'), ICONS.info); return; }
+  const { error } = await sb.from('referral_commissions').insert({ partner_name:partnerName, referred_client_name:referredClientName||null, commission_amount:commissionAmount, notes, status:'pending' });
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); closeModal(); render();
+  toast(t('save_changes'));
+}
+async function markCommissionPaid(id){
+  const { error } = await sb.from('referral_commissions').update({ status:'paid', paid_at:new Date().toISOString() }).eq('id', id);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); render();
+  toast(t('commission_paid'));
+}
+async function deleteReferralCommission(id){
+  if(!confirm(t('confirm_delete_commission'))) return;
+  const { error } = await sb.from('referral_commissions').delete().eq('id', id);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); render();
+  toast(t('delete'));
+}
+function renderDiscountCodesCard(){
+  const codes = (state.discountCodes||[]).slice();
+  return `<div class="card-head"><h3>${t('discount_codes_title')}</h3><button class="btn btn-outline btn-sm" onclick="openDiscountCodeModal()">+ ${t('add_discount_code')}</button></div>
+  <div class="muted" style="font-size:12.5px;margin-bottom:12px;">${t('discount_codes_sub')}</div>
+  ${codes.length? `<div class="table-wrap"><table><thead><tr><th>${t('th_code')}</th><th>${t('th_percent')}</th><th>${t('th_active')}</th><th></th><th></th></tr></thead><tbody>
+  ${codes.map(c=>`<tr><td class="row-name">${escapeHtml(c.code)}</td><td>${c.discountType==='flat'?fmtMoney(c.amountOff)+' off':c.percentOff+'%'}</td><td><span class="badge ${c.active?'badge-success':'badge-gray'}"><span class="badge-dot"></span>${c.active?'✓':'—'}</span></td><td onclick="event.stopPropagation()"><button class="btn btn-outline btn-sm" onclick="toggleDiscountCodeActive('${c.code}', ${!c.active})">${c.active?t('deactivate_code'):t('activate_code')}</button></td><td onclick="event.stopPropagation()"><button class="btn-icon" onclick="deleteDiscountCode('${c.code}')">${ICONS.trash}</button></td></tr>`).join('')}
+  </tbody></table></div>` : `<div class="empty">${ICONS.info}<h4>${t('no_discount_codes')}</h4></div>`}`;
+}
+function openDiscountCodeModal(){
+  openModal(`<div class="modal-head"><h3>${t('new_discount_code_title')}</h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid"><div class="form-row"><label>${t('lbl_discount_code')}</label><input id="dc-code" style="text-transform:uppercase;"></div>
+    <div class="form-row"><label>${t('lbl_discount_kind')}</label><select id="dc-type" onchange="toggleDiscountValueField()"><option value="percent">${t('opt_percent')}</option><option value="flat">${t('opt_flat')}</option></select></div></div>
+    <div class="form-row" id="dc-percent-row"><label>${t('lbl_discount_percent')}</label><input type="number" min="1" max="100" step="1" id="dc-percent" value="10"></div>
+    <div class="form-row" id="dc-amount-row" style="display:none;"><label>${t('lbl_discount_amount')}</label><input type="number" min="1" step="1" id="dc-amount" value="50"></div>
+    <div class="form-row"><label>${t('lbl_notes')}</label><textarea id="dc-notes" placeholder="e.g. Atrium Health employee partnership"></textarea></div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-outline" onclick="closeModal()">${t('cancel')}</button><button class="btn btn-gold" onclick="saveDiscountCode()">${t('save_changes')}</button></div>`);
+}
+function toggleDiscountValueField(){
+  const isFlat = document.getElementById('dc-type').value === 'flat';
+  document.getElementById('dc-percent-row').style.display = isFlat? 'none': '';
+  document.getElementById('dc-amount-row').style.display = isFlat? '': 'none';
+}
+async function saveDiscountCode(){
+  const code = document.getElementById('dc-code').value.trim().toUpperCase();
+  const type = document.getElementById('dc-type').value;
+  const notes = document.getElementById('dc-notes').value.trim();
+  if(!code){ toast(t('err_generic'), ICONS.info); return; }
+  let row = { code, discount_type:type, notes, active:true, percent_off:null, amount_off:null };
+  if(type==='flat'){
+    const amount = parseFloat(document.getElementById('dc-amount').value);
+    if(!amount || amount<=0){ toast(t('err_generic'), ICONS.info); return; }
+    row.amount_off = amount;
+  } else {
+    const percent = parseFloat(document.getElementById('dc-percent').value);
+    if(!percent || percent<=0 || percent>100){ toast(t('err_generic'), ICONS.info); return; }
+    row.percent_off = percent;
+  }
+  const { error } = await sb.from('discount_codes').insert(row);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); closeModal(); render();
+  toast(t('save_changes'));
+}
+async function toggleDiscountCodeActive(code, newActive){
+  const { error } = await sb.from('discount_codes').update({ active:newActive }).eq('code', code);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); render();
+}
+async function deleteDiscountCode(code){
+  if(!confirm(t('confirm_delete_discount_code'))) return;
+  const { error } = await sb.from('discount_codes').delete().eq('code', code);
+  if(error){ toast(error.message, ICONS.info); return; }
+  await loadStaffData(); render();
+  toast(t('delete'));
 }
 function renderSecurityCard(){
   const active = mfaFactors.length>0;
