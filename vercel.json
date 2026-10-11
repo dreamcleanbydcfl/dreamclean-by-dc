@@ -3,6 +3,10 @@
     {
       "path": "/api/backup-cron",
       "schedule": "0 6 * * 0"
+    },
+    {
+      "path": "/api/keepalive",
+      "schedule": "0 12 */2 * *"
     }
   ]
 }
